@@ -4,6 +4,12 @@ from openpyxl import load_workbook
 
 referral_list = []
 
+def empty_referral_list():
+    global referral_list  
+    referral_list.clear()
+
+def print_referral_list():
+    print(referral_list)
 # Function to process the Excel data and return the filtered list
 def process_excel_data(file_path):
     book = load_workbook(file_path)
