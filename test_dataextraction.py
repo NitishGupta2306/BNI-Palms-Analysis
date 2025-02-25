@@ -1,4 +1,6 @@
 import unittest
+import data_base_manager
+import data_extraction
 
 class test_dataextration(unittest.TestCase):
 
