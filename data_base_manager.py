@@ -9,7 +9,6 @@ def create_database():
     # Create the table (if it doesn't exist)
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS referrals (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
             receiver_name TEXT,
             slip_type TEXT,
             insider_ref INTEGER,
@@ -45,13 +44,13 @@ def print_database_contents():
     rows = cursor.fetchall()
 
     # Print headers
-    print(f"{'ID':<5}   {'Receiver Name':<20}   {'Slip Type':<10}   {'Insider Ref':<12}     {'Outside Ref':<12}")
+    print(f"{'Receiver Name':<30}   {'Slip Type':<10}   {'Insider Ref':<12}     {'Outside Ref':<12}")
     print("-" * 60)
 
     # Print each row in a readable format
     for row in rows:
-        id, receiver_name, slip_type, insider_ref, outside_ref = row  # Fixed unpacking issue
-        print(f"{id:<5} {receiver_name:<30} {slip_type:<10} {insider_ref:<12} {outside_ref:<12}")
+        receiver_name, slip_type, insider_ref, outside_ref = row  # Fixed unpacking issue
+        print(f" {receiver_name:<26} {slip_type:<10} {insider_ref:<12} {outside_ref:<12}")
 
     # Close the connection
     conn.close()
@@ -59,7 +58,6 @@ def print_database_contents():
 def delete_database():
     try:
         os.remove('referrals.db')  # Delete the database file
-        print("Database file deleted successfully.")
     except FileNotFoundError:
         print("Database file not found.")
     except Exception as e:

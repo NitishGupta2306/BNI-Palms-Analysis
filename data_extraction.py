@@ -2,6 +2,8 @@ import sqlite3
 import os
 from openpyxl import load_workbook
 
+referral_list = []
+
 # Function to process the Excel data and return the filtered list
 def process_excel_data(file_path):
     book = load_workbook(file_path)
@@ -12,7 +14,6 @@ def process_excel_data(file_path):
     column_reciever_name = sheet["B"]
     column_insider_ref = sheet["J"]
 
-    referral_list = []
     curr_ref_type = True  # Default reference type value
     is_name_inlist = False
 
@@ -44,8 +45,6 @@ def process_excel_data(file_path):
 
             is_name_inlist = False
 
-        
-    print(len(referral_list))
     return referral_list
 
 

@@ -2,6 +2,13 @@ import unittest
 
 class test_dataextration(unittest.TestCase):
 
+# Add tests for:
+# Number referalls based off testfile data
+# is the db deleted
+# is the db set up
+# all expected colums in db
+
+
 # EXPECTED DATA FROM TEST
 39    Abel Sunil George              Referral   0            2           
 6     Arooj  Aslam                   Referral   2            0           
