@@ -1,7 +1,10 @@
 import os
-
-from data_extraction import process_excel_data, print_referral_list, empty_referral_list
+from export_sql_excel import extract_excel
+from data_extraction import process_excel_data, empty_referral_list
 from data_base_manager import create_database, insert_data_into_db, print_database_contents, delete_database
+
+DB_NAME = "referrals.db"
+TABLE_NAME = "referrals"
 
 create_database()
 
@@ -16,4 +19,6 @@ empty_referral_list()
 
 # printing current data + deleting to avoid multiple entries
 print_database_contents()
+extract_excel(DB_NAME, TABLE_NAME)
+
 delete_database()
