@@ -17,9 +17,9 @@ def process_referral_excel_data(file_path):
     sheet = book.active
 
     # Identify columns in the Excel sheet
-    column_slip_type = sheet["D"]
-    column_reciever_name = sheet["B"]
-    column_insider_ref = sheet["J"]
+    column_slip_type = sheet["C"]
+    column_reciever_name = sheet["A"]
+    column_insider_ref = sheet["G"]
 
     curr_ref_type = True  # Default reference type value
     is_name_inlist = False
@@ -28,7 +28,7 @@ def process_referral_excel_data(file_path):
     for cell_slip_type, cell_reciever_name, cell_insider_ref in zip(column_slip_type, column_reciever_name, column_insider_ref):
         if cell_slip_type.value == "Referral":
             # checking current referral type
-            if cell_insider_ref.value == "":
+            if cell_insider_ref.value == None:
                 curr_ref_type = True
             else:
                 curr_ref_type = False
@@ -60,9 +60,9 @@ def process_oto_excel_data(file_path):
     sheet = book.active
 
     # Identify columns in the Excel sheet
-    column_slip_type = sheet["D"]
+    column_slip_type = sheet["C"]
     column_reciever_name = sheet["B"]
-    column_insider_ref = sheet["J"]
+    column_insider_ref = sheet["G"]
 
     curr_ref_type = True  # Default reference type value
     is_name_inlist = False
@@ -71,7 +71,7 @@ def process_oto_excel_data(file_path):
     for cell_slip_type, cell_reciever_name, cell_insider_ref in zip(column_slip_type, column_reciever_name, column_insider_ref):
         if cell_slip_type.value == "One to One":
             # checking current referral type
-            if cell_insider_ref.value == "":
+            if cell_insider_ref.value == None:
                 curr_ref_type = True
             else:
                 curr_ref_type = False
