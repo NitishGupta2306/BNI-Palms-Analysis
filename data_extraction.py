@@ -52,6 +52,7 @@ def process_referral_excel_data(file_path):
 
             is_name_inlist = False
 
+    print(len(referral_list))
 
     return referral_list
 
