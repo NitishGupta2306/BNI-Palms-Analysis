@@ -1,100 +1,107 @@
-import sqlite3
-import os
-from openpyxl import load_workbook
+from openpyxl import Workbook, load_workbook
+import pandas as pd
 
-referral_list = []
-oto_list = []
+# Extract names from an Excel file
+def extract_names_from_excel(file_path):
+    df = pd.read_excel(file_path, usecols=[3, 4], dtype=str, header=0)  # Read first and last names
+    df.dropna(how="all", inplace=True)  # Drop empty rows
+    df["Full Name"] = df.iloc[:, 0].str.strip() + " " + df.iloc[:, 1].str.strip()
+    return df["Full Name"].dropna().tolist()  # Return list of full names
 
-def empty_list():
-    global referral_list 
-    global oto_list 
-    referral_list.clear()
-    oto_list.clear()
+# Load member names once
+member_names = extract_names_from_excel("Member Names/Conti members.xlsx")
 
-# Function to process the Excel data and return the filtered list
-def process_referral_excel_data(file_path, member_names):
+# Persistent referral matrix (dictionary of dictionaries)
+referral_matrix = {giver: {receiver: 0 for receiver in member_names} for giver in member_names}
+OTO_matrix = {giver: {receiver: 0 for receiver in member_names} for giver in member_names}
+
+# Function to process Excel data and update the referral matrix
+def process_referral_excel_data(file_path):
     book = load_workbook(file_path)
     sheet = book.active
 
-    # Identify columns in the Excel sheet
     column_slip_type = sheet["C"]
-    column_reciever_name = sheet["A"]
-    column_insider_ref = sheet["G"]
-
-    curr_ref_type = True  # Default reference type value
-    is_name_inlist = False
-
-    # Loop through the rows and filter the data
-    for cell_slip_type, cell_reciever_name, cell_insider_ref in zip(column_slip_type, column_reciever_name, column_insider_ref):
-        if cell_reciever_name.value in member_names:
-            if cell_slip_type.value == "Referral":
-                # checking current referral type
-                if cell_insider_ref.value == None:
-                    curr_ref_type = True
-                else:
-                    curr_ref_type = False
-            
-                # checking if the reciever already in list.
-                for list in referral_list:
-                    if cell_reciever_name.value in list:
-                        is_name_inlist = True
-                        if curr_ref_type:
-                            # incrementing number of inside referrals.
-                            list[2] += 1
-                        else:
-                            # incrementing number of outside referrals.
-                            list[3] += 1
-                        break
-
-                if curr_ref_type == True and is_name_inlist == False:
-                    referral_list.append([cell_reciever_name.value, cell_slip_type.value, 1, 0])
-                elif curr_ref_type == False and is_name_inlist == False:
-                    referral_list.append([cell_reciever_name.value, cell_slip_type.value, 0, 1])
-
-                is_name_inlist = False
-
-    print(len(referral_list))
-
-    return referral_list
-
-def process_oto_excel_data(file_path):
-    book = load_workbook(file_path)
-    sheet = book.active
-
-    # Identify columns in the Excel sheet
-    column_slip_type = sheet["C"]
+    column_giver_name = sheet["A"]
     column_reciever_name = sheet["B"]
-    column_insider_ref = sheet["G"]
 
-    curr_ref_type = True  # Default reference type value
-    is_name_inlist = False
+    for cell_slip_type, cell_giver_name, cell_reciever_name in zip(column_slip_type, column_giver_name, column_reciever_name):
+        if (cell_reciever_name.value in member_names and
+            cell_giver_name.value in member_names and
+            cell_slip_type.value == "Referral"):
 
-    # Loop through the rows and filter the data
-    for cell_slip_type, cell_reciever_name, cell_insider_ref in zip(column_slip_type, column_reciever_name, column_insider_ref):
-        if cell_slip_type.value == "One to One":
-            # checking current referral type
-            if cell_insider_ref.value == None:
-                curr_ref_type = True
-            else:
-                curr_ref_type = False
-            
-            # checking if the reciever already in list.
-            for list in oto_list:
-                if cell_reciever_name.value in list:
-                    is_name_inlist = True
-                    if curr_ref_type:
-                        # incrementing number of inside referrals.
-                        list[2] += 1
-                    else:
-                        # incrementing number of outside referrals.
-                        list[3] += 1
-                    break
+            giver = cell_giver_name.value
+            receiver = cell_reciever_name.value
+            referral_matrix[giver][receiver] += 1  # Increment count instead of resetting
 
-            if curr_ref_type == True and is_name_inlist == False:
-                oto_list.append([cell_reciever_name.value, cell_slip_type.value, 1, 0])
-            elif curr_ref_type == False and is_name_inlist == False:
-                oto_list.append([cell_reciever_name.value, cell_slip_type.value, 0, 1])
+    return referral_matrix  # Return updated matrix
 
-            is_name_inlist = False
+# Function to process Excel data and update the OTO matrix
+def process_OTO_excel_data(file_path):
+    book = load_workbook(file_path)
+    sheet = book.active
 
-    return oto_list
+    column_slip_type = sheet["C"]
+    column_giver_name = sheet["A"]
+    column_reciever_name = sheet["B"]
+
+    for cell_slip_type, cell_giver_name, cell_reciever_name in zip(column_slip_type, column_giver_name, column_reciever_name):
+        if (cell_reciever_name.value in member_names and
+            cell_giver_name.value in member_names and
+            cell_slip_type.value == "One to One"):
+
+            giver = cell_giver_name.value
+            receiver = cell_reciever_name.value
+            OTO_matrix[giver][receiver] += 1  # Increment count instead of resetting
+
+    return OTO_matrix  # Return updated matrix
+
+# Function to export the matrix to an Excel file
+def export_referral_matrix_to_excel(output_file):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Referral Matrix"
+
+    members = list(referral_matrix.keys())
+
+    # Write headers (X-axis: Receivers)
+    ws.cell(row=1, column=1, value="Giver \ Receiver")
+    for col, member in enumerate(members, start=2):
+        ws.cell(row=1, column=col, value=member)
+
+    # Write data (Y-axis: Givers)
+    for row, giver in enumerate(members, start=2):
+        ws.cell(row=row, column=1, value=giver)
+        for col, receiver in enumerate(members, start=2):
+            ws.cell(row=row, column=col, value=referral_matrix[giver][receiver])
+
+    wb.save(output_file)
+    print(f"Referral matrix exported successfully to {output_file}")
+
+def export_OTO_matrix_to_excel(output_file):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "One to One Matrix"
+
+    members = list(OTO_matrix.keys())
+
+    # Write headers (X-axis: Receivers)
+    ws.cell(row=1, column=1, value="Giver \ Receiver")
+    for col, member in enumerate(members, start=2):
+        ws.cell(row=1, column=col, value=member)
+
+    # Write data (Y-axis: Givers)
+    for row, giver in enumerate(members, start=2):
+        ws.cell(row=row, column=1, value=giver)
+        for col, receiver in enumerate(members, start=2):
+            ws.cell(row=row, column=col, value=OTO_matrix[giver][receiver])
+
+    wb.save(output_file)
+    print(f"Referral matrix exported successfully to {output_file}")
+
+# Wrapper function to process referrals and export results
+def data_extraction(referral_file_path):
+    process_referral_excel_data(referral_file_path)
+    process_OTO_excel_data(referral_file_path)
+    
+
+
