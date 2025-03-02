@@ -1,4 +1,5 @@
 import os
+from member_names import extract_names_from_excel
 from fileconversion import convert_xls_to_xlsx
 from export_sql_excel import extract_excel
 from data_extraction import process_oto_excel_data, process_referral_excel_data, empty_list
@@ -13,7 +14,7 @@ for files in os.listdir("Excel Files"):
 
 for files in os.listdir("Excel Files"):
     if files.endswith(".xlsx"):
-        referral_data = process_referral_excel_data(f"Excel Files/{files}")
+        referral_data = process_referral_excel_data(f"Excel Files/{files}", extract_names_from_excel("Member Names/Conti members.xlsx"))
         #oto_data = process_oto_excel_data(f"Excel Files/{files}")
 
 # adding data to db
