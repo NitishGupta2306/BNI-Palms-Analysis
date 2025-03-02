@@ -3,4 +3,4 @@ System to scan through weekly palms reports to generate reports on internal vs e
 
 The system accepts multiple files and gives one report.
 
-#### Please note: the excel files must be in format .xlsx
+The current working area is about getting the names of the people you havent gotten or given a refferal to.
