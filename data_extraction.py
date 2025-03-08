@@ -140,12 +140,38 @@ def export_OTO_matrix_to_excel(output_file):
     # Write data (Y-axis: Givers)
     for row, giver in enumerate(members, start=2):
         ws.cell(row=row, column=1, value=giver).font = Font(bold=True)
+
+        row_values = []
+        unique_values = 0
         for col, receiver in enumerate(members, start=2):
+            value = OTO_matrix[giver][receiver]
             cell = ws.cell(row=row, column=col, value=OTO_matrix[giver][receiver])
             cell.alignment = center_align
             cell.border = border_style  # Apply borders
-            if OTO_matrix[giver][receiver] == 0:
+            if value == 0:
                 cell.fill = zero_fill  # Highlight zero values
+            elif value > 0:
+                unique_values += 1
+            
+            row_values.append(value)
+        
+        # Add a column for "Total OTO"
+        ws.cell(row = 1, column = len(members) + 2, value = "Total OTO: ").font = Font(bold=True)
+
+        # Add a column for "Unique OTO"
+        ws.cell(row=1, column=len(members) + 3, value= f"Unique OTO: (Total Members = {len(members)})").font = Font(bold=True)
+
+        # Compute row average and write it in the last column
+        avg_cell = ws.cell(row=row, column=len(members) + 2, value = sum(row_values))
+        unique_cell = ws.cell(row = row, column = len(members) + 3, value = unique_values)
+
+        avg_cell.font = Font(bold=True)
+        avg_cell.alignment = center_align
+        avg_cell.border = border_style
+
+        unique_cell.font = Font(bold=True)
+        unique_cell.alignment = center_align
+        unique_cell.border = border_style
 
     # Auto-adjust column widths
     for col in range(1, len(members) + 2):
