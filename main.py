@@ -1,6 +1,6 @@
 import os
 from fileconversion import convert_xls_to_xlsx
-from data_extraction import data_extraction, export_referral_matrix_to_excel, export_OTO_matrix_to_excel
+from data_extraction import data_extraction, final_referral_data_to_excel, final_OTO_data_to_excel
 
 # Processing all excel file
 for files in os.listdir("Excel Files"):
@@ -12,5 +12,5 @@ for files in os.listdir("Excel Files"):
         print(f"Processing {files}...")  # Log the file being processed
         data_extraction(f"Excel Files/{files}")
 
-export_referral_matrix_to_excel("referral_matrix.xlsx")
-export_OTO_matrix_to_excel("OTO_matrix.xlsx")
+final_referral_data_to_excel("referral_matrix.xlsx")
+final_OTO_data_to_excel("OTO_matrix.xlsx")

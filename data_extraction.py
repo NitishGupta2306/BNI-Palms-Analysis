@@ -18,8 +18,9 @@ OTO_matrix = {giver: {receiver: 0 for receiver in member_names} for giver in mem
 
 '''CELL STYLING FUNCTIONS:'''
 # Function to do complete cell styles for the excel.
-def cell_styling(self):
-    self.font = Font(bold=True)
+def cell_styling(self, bold = False):
+    if bold:
+        self.font = Font(bold=True)
     self.alignment = center_align
     self.border = border_style
 
@@ -80,12 +81,7 @@ def process_OTO_excel_data(file_path):
 
 
 '''CALCULATION AND EXPORTING FUNCTIONS'''
-# Function to export the matrix to an Excel file
-def export_referral_matrix_to_excel(output_file):
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Referral Matrix"
-
+def export_matrix_to_excel(ws):
     members = list(referral_matrix.keys())
 
     # Write headers (X-axis: Receivers)
@@ -93,7 +89,29 @@ def export_referral_matrix_to_excel(output_file):
     for col, member in enumerate(members, start=2):
         ws.cell(row=1, column=col, value=member).font = Font(bold=True)
 
-    # Write and processes data (Y-axis: Givers)
+    # Write matrix to excel:
+    for row, giver in enumerate(members, start=2):
+        ws.cell(row=row, column=1, value=giver).font = Font(bold=True)
+
+        for col, receiver in enumerate(members, start=2):
+            value_row = referral_matrix[giver][receiver]
+            cell = ws.cell(row=row, column=col, value=value_row)
+
+            if value_row == 0:
+                cell.fill = zero_fill  # Highlight zero values
+            cell_styling(cell)
+
+# Function to export the matrix to an Excel file
+def final_referral_data_to_excel(output_file):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Referral Matrix"
+    members = list(referral_matrix.keys())
+
+    # Adding Matrix data to workbook
+    export_matrix_to_excel(ws)
+
+    # Adding columns for "Total Referrals Given" and "Unique Referrals Given."
     for row, giver in enumerate(members, start=2):
         ws.cell(row=row, column=1, value=giver).font = Font(bold=True)
 
@@ -101,17 +119,13 @@ def export_referral_matrix_to_excel(output_file):
         unique_referrals = 0
         for col, receiver in enumerate(members, start=2):
             value_row = referral_matrix[giver][receiver]
-            cell = ws.cell(row=row, column=col, value=value_row)
-            cell.alignment = center_align
-            cell.border = border_style  # Apply borders
-            if value_row == 0:
-                cell.fill = zero_fill  # Highlight zero values
-            elif value_row > 0:
+
+            if value_row > 0:
                 unique_referrals += 1
             
             row_values.append(value_row)
-                    
-        # Adding columns for "Total Referrals Given" and "Unique Referrals Given."
+
+        # Creating the new cells.       
         ws.cell(row=1, column=len(members) + 2, value="Total Referrals Given: ").font = Font(bold=True)
         ws.cell(row=1, column=len(members) + 3, value= f"Unique Referals Given: (Total Members = {len(members)})").font = Font(bold=True)
 
@@ -120,10 +134,10 @@ def export_referral_matrix_to_excel(output_file):
         unique_cell_given = ws.cell(row = row, column = len(members) + 3, value = unique_referrals)
 
         # Styling all new cells:
-        cell_styling(avg_cell_given)
-        cell_styling(unique_cell_given)
+        cell_styling(avg_cell_given, True)
+        cell_styling(unique_cell_given, True)
 
-    # calculating recieved data
+    # Adding rows for "Total Referrals Recieved" and "Unique Referrals Recieved."
     for col, reciever in enumerate(members, start=2):
         col_values = []
         unique_referrals = 0
@@ -133,7 +147,7 @@ def export_referral_matrix_to_excel(output_file):
                 unique_referrals += 1
             col_values.append(value_col)
         
-        # Adding rows for "Total Referrals Recieved" and "Unique Referrals Recieved."
+        # Creating the new cells.
         ws.cell(row=len(members) + 2, column=1, value="Total Referrals Recieved: ").font = Font(bold=True)
         ws.cell(row=len(members) + 3, column=1, value= f"Unique Referals Recieved: (Total Members = {len(members)})").font = Font(bold=True)
         
@@ -142,32 +156,23 @@ def export_referral_matrix_to_excel(output_file):
         unique_cell_recieved = ws.cell(row = len(members) + 3, column =col, value = unique_referrals)
 
         # Styling all new cells:
-        cell_styling(avg_cell_recieved)
-        cell_styling(unique_cell_recieved)
+        cell_styling(avg_cell_recieved, True)
+        cell_styling(unique_cell_recieved, True)
 
     cell_autosizing(ws)
     wb.save(output_file)
     print(f"Referral matrix exported successfully to {output_file}")
 
-def export_OTO_matrix_to_excel(output_file):
+def final_OTO_data_to_excel(output_file):
     wb = Workbook()
     ws = wb.active
     ws.title = "One to One Matrix"
-
     members = list(OTO_matrix.keys())
 
-    # Write headers (X-axis: Receivers)
-    ws.cell(row=1, column=1, value="Giver \ Receiver").font = Font(bold=True)
-    for col, member in enumerate(members, start=2):
-        ws.cell(row=1, column=col, value=member).font = Font(bold=True)
+    # Adding Matrix data to workbook
+    export_matrix_to_excel(ws)
 
-    # Define styles
-    zero_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
-    border_style = Border(left=Side(style="thin"), right=Side(style="thin"),
-                          top=Side(style="thin"), bottom=Side(style="thin"))
-    center_align = Alignment(horizontal="center", vertical="center")
-
-    # Write data (Y-axis: Givers)
+    # Adding columns for "Total OTO" and "Unique OTO."
     for row, giver in enumerate(members, start=2):
         ws.cell(row=row, column=1, value=giver).font = Font(bold=True)
 
@@ -175,33 +180,22 @@ def export_OTO_matrix_to_excel(output_file):
         unique_values = 0
         for col, receiver in enumerate(members, start=2):
             value = OTO_matrix[giver][receiver]
-            cell = ws.cell(row=row, column=col, value=OTO_matrix[giver][receiver])
-            cell.alignment = center_align
-            cell.border = border_style  # Apply borders
-            if value == 0:
-                cell.fill = zero_fill  # Highlight zero values
-            elif value > 0:
+            if value > 0:
                 unique_values += 1
             
             row_values.append(value)
         
-        # Add a column for "Total OTO"
+        # Creating the new cells.
         ws.cell(row = 1, column = len(members) + 2, value = "Total OTO: ").font = Font(bold=True)
-
-        # Add a column for "Unique OTO"
         ws.cell(row=1, column=len(members) + 3, value= f"Unique OTO: (Total Members = {len(members)})").font = Font(bold=True)
 
-        # Compute row average and write it in the last column
+        # Adding calculated values to the new cells:
         avg_cell = ws.cell(row=row, column=len(members) + 2, value = sum(row_values))
         unique_cell = ws.cell(row = row, column = len(members) + 3, value = unique_values)
 
-        avg_cell.font = Font(bold=True)
-        avg_cell.alignment = center_align
-        avg_cell.border = border_style
-
-        unique_cell.font = Font(bold=True)
-        unique_cell.alignment = center_align
-        unique_cell.border = border_style
+        # Styling all new cells:
+        cell_styling(avg_cell, True)
+        cell_styling(unique_cell, True)
 
     cell_autosizing(ws)
     wb.save(output_file)
