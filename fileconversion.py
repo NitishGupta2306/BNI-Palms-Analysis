@@ -7,12 +7,6 @@ def convert_xls_to_xlsx(file_path):
     Converts an XML-based .xls (Excel 2003 XML format) to a proper .xlsx file.
     Saves the converted file in the same folder as the original.
     Deletes the original .xls file upon successful conversion.
-
-    Parameters:
-        file_path (str): Full path to the .xls file.
-    
-    Returns:
-        None
     """
     if not file_path.lower().endswith(".xls"):
         raise ValueError("The provided file must have a .xls extension")

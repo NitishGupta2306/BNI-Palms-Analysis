@@ -1,22 +1,44 @@
+from member_extraction import extract_names_from_excel
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import PatternFill, Border, Side, Alignment, Font
+from openpyxl.utils import get_column_letter
+
 import pandas as pd
 
-# Extract names from an Excel file
-def extract_names_from_excel(file_path):
-    df = pd.read_excel(file_path, usecols=[3, 4], dtype=str, header=0)  # Read first and last names
-    df.dropna(how="all", inplace=True)  # Drop empty rows
-    df["Full Name"] = df.iloc[:, 0].str.strip() + " " + df.iloc[:, 1].str.strip()
-    return df["Full Name"].dropna().tolist()  # Return list of full names
-
-# Load member names once
-member_names = extract_names_from_excel("Member Names/Conti members.xlsx")
+'''GLOBAL VARIABLES:'''
+# Styling variables for all cells.
+zero_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
+border_style = Border(left=Side(style="thin"), right=Side(style="thin"), top=Side(style="thin"), bottom=Side(style="thin"))
+center_align = Alignment(horizontal="center", vertical="center")
 
 # Persistent referral matrix (dictionary of dictionaries)
+member_names = extract_names_from_excel("Member Names/Conti members.xlsx")
 referral_matrix = {giver: {receiver: 0 for receiver in member_names} for giver in member_names}
 OTO_matrix = {giver: {receiver: 0 for receiver in member_names} for giver in member_names}
 
-# Function to process Excel data and update the referral matrix
+'''CELL STYLING FUNCTIONS:'''
+# Function to do complete cell styles for the excel.
+def cell_styling(self):
+    self.font = Font(bold=True)
+    self.alignment = center_align
+    self.border = border_style
+
+# Function to auto-adjust column widths
+def cell_autosizing(ws):
+    members = list(referral_matrix.keys())
+    for col in range(1, len(members) + 4): # +3 for the title colums.
+        max_length = 0
+        col_letter = get_column_letter(col)
+        # Find the maximum length of content in the column
+        for row in range(1, len(members) + 4):
+            cell_value = ws.cell(row=row, column=col).value
+            if cell_value:
+                max_length = max(max_length, len(str(cell_value)))
+        # Set the column width to fit content
+        ws.column_dimensions[col_letter].width = max_length
+
+'''UPDATING MATRIX FUNCTIONS:'''
+# Function to process Excel data and update the referral matrix.
 def process_referral_excel_data(file_path):
     book = load_workbook(file_path)
     sheet = book.active
@@ -36,7 +58,7 @@ def process_referral_excel_data(file_path):
 
     return referral_matrix  # Return updated matrix
 
-# Function to process Excel data and update the OTO matrix
+# Function to process Excel data and update the OTO matrix.
 def process_OTO_excel_data(file_path):
     book = load_workbook(file_path)
     sheet = book.active
@@ -56,6 +78,8 @@ def process_OTO_excel_data(file_path):
 
     return OTO_matrix  # Return updated matrix
 
+
+'''CALCULATION AND EXPORTING FUNCTIONS'''
 # Function to export the matrix to an Excel file
 def export_referral_matrix_to_excel(output_file):
     wb = Workbook()
@@ -68,12 +92,6 @@ def export_referral_matrix_to_excel(output_file):
     ws.cell(row=1, column=1, value="Giver \ Receiver").font = Font(bold=True)
     for col, member in enumerate(members, start=2):
         ws.cell(row=1, column=col, value=member).font = Font(bold=True)
-
-    # Define styles
-    zero_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
-    border_style = Border(left=Side(style="thin"), right=Side(style="thin"),
-                          top=Side(style="thin"), bottom=Side(style="thin"))
-    center_align = Alignment(horizontal="center", vertical="center")
 
     # Write and processes data (Y-axis: Givers)
     for row, giver in enumerate(members, start=2):
@@ -102,13 +120,8 @@ def export_referral_matrix_to_excel(output_file):
         unique_cell_given = ws.cell(row = row, column = len(members) + 3, value = unique_referrals)
 
         # Styling all new cells:
-        avg_cell_given.font = Font(bold=True)
-        avg_cell_given.alignment = center_align
-        avg_cell_given.border = border_style
-
-        unique_cell_given.font = Font(bold=True)
-        unique_cell_given.alignment = center_align
-        unique_cell_given.border = border_style
+        cell_styling(avg_cell_given)
+        cell_styling(unique_cell_given)
 
     # calculating recieved data
     for col, reciever in enumerate(members, start=2):
@@ -129,21 +142,10 @@ def export_referral_matrix_to_excel(output_file):
         unique_cell_recieved = ws.cell(row = len(members) + 3, column =col, value = unique_referrals)
 
         # Styling all new cells:
-        avg_cell_recieved.font = Font(bold=True)
-        avg_cell_recieved.alignment = center_align
-        avg_cell_recieved.border = border_style
+        cell_styling(avg_cell_recieved)
+        cell_styling(unique_cell_recieved)
 
-        unique_cell_recieved.font = Font(bold=True)
-        unique_cell_recieved.alignment = center_align
-        unique_cell_recieved.border = border_style
-
-
-
-    # Auto-adjust column widths
-    for cell in range(1, len(members) + 5):  # +3 to include "Row Average"
-        ws.column_dimensions[ws.cell(row=1, column=cell).column_letter].auto_size = True
-       # ws.row_dimensions[ws.cell(row=cell, column=1).row_letter].auto_size = True
-
+    cell_autosizing(ws)
     wb.save(output_file)
     print(f"Referral matrix exported successfully to {output_file}")
 
@@ -201,14 +203,11 @@ def export_OTO_matrix_to_excel(output_file):
         unique_cell.alignment = center_align
         unique_cell.border = border_style
 
-    # Auto-adjust column widths
-    for col in range(1, len(members) + 2):
-        ws.column_dimensions[ws.cell(row=1, column=col).column_letter].auto_size = True
-
+    cell_autosizing(ws)
     wb.save(output_file)
     print(f"OTO matrix exported successfully to {output_file}")
 
-
+'''CALLING FUNCTION FOR MAIN'''
 # Wrapper function to process referrals and export results
 def data_extraction(referral_file_path):
     process_referral_excel_data(referral_file_path)
