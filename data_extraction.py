@@ -75,46 +75,74 @@ def export_referral_matrix_to_excel(output_file):
                           top=Side(style="thin"), bottom=Side(style="thin"))
     center_align = Alignment(horizontal="center", vertical="center")
 
-    # Write data (Y-axis: Givers)
+    # Write and processes data (Y-axis: Givers)
     for row, giver in enumerate(members, start=2):
         ws.cell(row=row, column=1, value=giver).font = Font(bold=True)
-        
+
         row_values = []
         unique_referrals = 0
         for col, receiver in enumerate(members, start=2):
-            value = referral_matrix[giver][receiver]
-            cell = ws.cell(row=row, column=col, value=value)
+            value_row = referral_matrix[giver][receiver]
+            cell = ws.cell(row=row, column=col, value=value_row)
             cell.alignment = center_align
             cell.border = border_style  # Apply borders
-            if value == 0:
+            if value_row == 0:
                 cell.fill = zero_fill  # Highlight zero values
-            elif value > 0:
+            elif value_row > 0:
                 unique_referrals += 1
             
-            row_values.append(value)
+            row_values.append(value_row)
+                    
+        # Adding columns for "Total Referrals Given" and "Unique Referrals Given."
+        ws.cell(row=1, column=len(members) + 2, value="Total Referrals Given: ").font = Font(bold=True)
+        ws.cell(row=1, column=len(members) + 3, value= f"Unique Referals Given: (Total Members = {len(members)})").font = Font(bold=True)
 
-        # Add a column for "Row Average"
-        ws.cell(row=1, column=len(members) + 2, value="Total Referals: ").font = Font(bold=True)
+        # Adding calculated values to the new cells.
+        avg_cell_given = ws.cell(row=row, column=len(members) + 2, value = sum(row_values))
+        unique_cell_given = ws.cell(row = row, column = len(members) + 3, value = unique_referrals)
 
-        # Add a column for "Percentage of Members Given referrals"
-        ws.cell(row=1, column=len(members) + 3, value= f"Unique Referals: (Total Members = {len(members)})").font = Font(bold=True)
+        # Styling all new cells:
+        avg_cell_given.font = Font(bold=True)
+        avg_cell_given.alignment = center_align
+        avg_cell_given.border = border_style
+
+        unique_cell_given.font = Font(bold=True)
+        unique_cell_given.alignment = center_align
+        unique_cell_given.border = border_style
+
+    # calculating recieved data
+    for col, reciever in enumerate(members, start=2):
+        col_values = []
+        unique_referrals = 0
+        for row, giver in enumerate(members, start=2):
+            value_col = referral_matrix[giver][reciever]
+            if value_col > 0:
+                unique_referrals += 1
+            col_values.append(value_col)
+        
+        # Adding rows for "Total Referrals Recieved" and "Unique Referrals Recieved."
+        ws.cell(row=len(members) + 2, column=1, value="Total Referrals Recieved: ").font = Font(bold=True)
+        ws.cell(row=len(members) + 3, column=1, value= f"Unique Referals Recieved: (Total Members = {len(members)})").font = Font(bold=True)
+        
+        # Adding calculated values to the new cells:
+        avg_cell_recieved = ws.cell(row=len(members) + 2, column=col, value = sum(col_values))
+        unique_cell_recieved = ws.cell(row = len(members) + 3, column =col, value = unique_referrals)
+
+        # Styling all new cells:
+        avg_cell_recieved.font = Font(bold=True)
+        avg_cell_recieved.alignment = center_align
+        avg_cell_recieved.border = border_style
+
+        unique_cell_recieved.font = Font(bold=True)
+        unique_cell_recieved.alignment = center_align
+        unique_cell_recieved.border = border_style
 
 
-        # Compute row average and write it in the last column
-        avg_cell = ws.cell(row=row, column=len(members) + 2, value = sum(row_values))
-        unique_cell = ws.cell(row = row, column = len(members) + 3, value = unique_referrals)
-
-        avg_cell.font = Font(bold=True)
-        avg_cell.alignment = center_align
-        avg_cell.border = border_style
-
-        unique_cell.font = Font(bold=True)
-        unique_cell.alignment = center_align
-        unique_cell.border = border_style
 
     # Auto-adjust column widths
-    for col in range(1, len(members) + 3):  # +3 to include "Row Average"
-        ws.column_dimensions[ws.cell(row=1, column=col).column_letter].auto_size = True
+    for cell in range(1, len(members) + 5):  # +3 to include "Row Average"
+        ws.column_dimensions[ws.cell(row=1, column=cell).column_letter].auto_size = True
+       # ws.row_dimensions[ws.cell(row=cell, column=1).row_letter].auto_size = True
 
     wb.save(output_file)
     print(f"Referral matrix exported successfully to {output_file}")
