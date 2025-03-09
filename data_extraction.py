@@ -12,7 +12,7 @@ border_style = Border(left=Side(style="thin"), right=Side(style="thin"), top=Sid
 center_align = Alignment(horizontal="center", vertical="center")
 
 # Persistent referral matrix (dictionary of dictionaries)
-member_names = extract_names_from_excel("Member Names/Conti members.xlsx")
+member_names = extract_names_from_excel("Member Names/elevate_members.xlsx")
 referral_matrix = {giver: {receiver: 0 for receiver in member_names} for giver in member_names}
 OTO_matrix = {giver: {receiver: 0 for receiver in member_names} for giver in member_names}
 
@@ -78,7 +78,6 @@ def process_OTO_excel_data(file_path):
             OTO_matrix[giver][receiver] += 1  # Increment count instead of resetting
 
     return OTO_matrix  # Return updated matrix
-
 
 '''CALCULATION AND EXPORTING FUNCTIONS'''
 def export_matrix_to_excel(ws):
