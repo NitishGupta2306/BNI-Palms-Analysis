@@ -12,9 +12,11 @@ border_style = Border(left=Side(style="thin"), right=Side(style="thin"), top=Sid
 center_align = Alignment(horizontal="center", vertical="center")
 
 # Persistent referral matrix (dictionary of dictionaries)
-member_names = extract_names_from_excel("Member Names/elevate_members.xlsx")
+member_names = extract_names_from_excel("Member Names/united_members.xlsx")
 referral_matrix = {giver: {receiver: 0 for receiver in member_names} for giver in member_names}
 OTO_matrix = {giver: {receiver: 0 for receiver in member_names} for giver in member_names}
+combination_matrix = {giver: {receiver: 0 for receiver in member_names} for giver in member_names}
+
 
 '''CELL STYLING FUNCTIONS:'''
 # Function to do complete cell styles for the excel.
@@ -79,9 +81,28 @@ def process_OTO_excel_data(file_path):
 
     return OTO_matrix  # Return updated matrix
 
-'''CALCULATION AND EXPORTING FUNCTIONS'''
-def export_matrix_to_excel(ws):
+# Function to update a combination matrix of Referal to OTO
+def process_combination_excel_data():
     members = list(referral_matrix.keys())
+    for row, giver in enumerate(members, start=2):
+        for col, receiver in enumerate(members, start=2):
+            # OTO and Referral:
+            if ((referral_matrix[giver][receiver] > 0) and (OTO_matrix[giver][receiver] > 0)):
+                combination_matrix[giver][receiver] = 3
+            # Referral only:
+            elif ((referral_matrix[giver][receiver] > 0) and (OTO_matrix[giver][receiver] == 0)):
+                combination_matrix[giver][receiver] = 2
+            # OTO only:
+            elif ((referral_matrix[giver][receiver] == 0) and (OTO_matrix[giver][receiver] > 0)):
+                combination_matrix[giver][receiver] = 1
+            else:
+                combination_matrix[giver][receiver] = 0
+    
+    return combination_matrix
+
+'''CALCULATION AND EXPORTING FUNCTIONS'''
+def export_matrix_to_excel(ws, matrix):
+    members = list(matrix.keys())
 
     # Write headers (X-axis: Receivers)
     ws.cell(row=1, column=1, value="Giver \ Receiver").font = Font(bold=True)
@@ -93,7 +114,7 @@ def export_matrix_to_excel(ws):
         ws.cell(row=row, column=1, value=giver).font = Font(bold=True)
 
         for col, receiver in enumerate(members, start=2):
-            value_row = referral_matrix[giver][receiver]
+            value_row = matrix[giver][receiver]
             cell = ws.cell(row=row, column=col, value=value_row)
 
             if value_row == 0:
@@ -108,7 +129,7 @@ def final_referral_data_to_excel(output_file):
     members = list(referral_matrix.keys())
 
     # Adding Matrix data to workbook
-    export_matrix_to_excel(ws)
+    export_matrix_to_excel(ws, referral_matrix)
 
     # Adding columns for "Total Referrals Given" and "Unique Referrals Given."
     for row, giver in enumerate(members, start=2):
@@ -169,7 +190,7 @@ def final_OTO_data_to_excel(output_file):
     members = list(OTO_matrix.keys())
 
     # Adding Matrix data to workbook
-    export_matrix_to_excel(ws)
+    export_matrix_to_excel(ws, OTO_matrix)
 
     # Adding columns for "Total OTO" and "Unique OTO."
     for row, giver in enumerate(members, start=2):
@@ -199,6 +220,59 @@ def final_OTO_data_to_excel(output_file):
     cell_autosizing(ws)
     wb.save(output_file)
     print(f"OTO matrix exported successfully to {output_file}")
+
+def final_combination_data_to_excel(output_file):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Combination Matrix"
+    members = list(OTO_matrix.keys())
+
+    # Adding Matrix data to workbook
+    process_combination_excel_data()
+    export_matrix_to_excel(ws, combination_matrix)
+
+    # Adding columns for "Total OTO" and "Unique OTO."
+    for row, giver in enumerate(members, start=2):
+        ws.cell(row=row, column=1, value=giver).font = Font(bold=True)
+
+        type_3 = 0
+        type_2 = 0
+        type_1 = 0
+        type_0 = 0
+
+        for col, receiver in enumerate(members, start=2):
+            value = combination_matrix[giver][receiver]
+            if value == 0:
+                type_0 += 1
+            elif value == 1:
+                type_1 += 1
+            elif value == 2:
+                type_2 += 1
+            else:
+                type_3 += 1
+        
+        # Creating the new cells.
+        ws.cell(row=1, column=len(members) + 2, value= "Neither:").font = Font(bold=True)
+        ws.cell(row=1, column=len(members) + 3, value= "OTO only:").font = Font(bold=True)
+        ws.cell(row=1, column=len(members) + 4, value= "Referral only:").font = Font(bold=True)
+        ws.cell(row=1, column=len(members) + 5, value= "OTO and Referral:").font = Font(bold=True)
+
+
+        # Adding calculated values to the new cells:
+        cell_type_0 = ws.cell(row=row, column=len(members) + 2, value = type_0)
+        cell_type_1 = ws.cell(row=row, column=len(members) + 3, value = type_1)
+        cell_type_2 = ws.cell(row=row, column=len(members) + 4, value = type_2)
+        cell_type_3 = ws.cell(row=row, column=len(members) + 5, value = type_3)
+
+        # Styling all new cells:
+        cell_styling(cell_type_0, True)
+        cell_styling(cell_type_1, True)
+        cell_styling(cell_type_2, True)
+        cell_styling(cell_type_3, True)
+
+    cell_autosizing(ws)
+    wb.save(output_file)
+    print(f"Referral matrix exported successfully to {output_file}")
 
 '''CALLING FUNCTION FOR MAIN'''
 # Wrapper function to process referrals and export results
