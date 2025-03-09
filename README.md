@@ -22,15 +22,25 @@
 
 
 ##### OTO_matrix.xlsx:
-1. This file contains a two-dimensional grid that tells you which memebers have recieved a referal from each given member.
+1. This file contains a two-dimensional grid that tells you which memebers have done a one to one with each other.
 2. The X-axis and Y-axis contain member names.
 3. The remaining is a grid of numbers each representing the total numbers of OTO between the members in the X and Y axis.
 4. The right-most columns show the total OTOs conducted and the total unique OTOs conducted.
     - Unique OTOs = One to Ones performed with different members
 
+##### combination_matrix.xlsx:
+1. The X-axis and Y-axis contain member names.
+2. This file contains a two-dimensional grid that tells you the combination of OTO and Referal values.
+    - 0: implies that neither a OTO nor a referral has been passed between these members
+    - 1: implies that a OTO has been done, but no referral has been passed.
+    - 2: implies that a referral has been passed, but no OTO was done.
+    - 3: implies that both a OTO was conducted and a referral was passed.
+3. The right-most columns show the totals for each of the above mentioned types.
+
 ---
 ### Upcoming Features:
-1. This program will soon be launched on docker to make it easier to run by any individual.
-2. This program will let you enter files through an upload menu.
+1. Combining these three files into one .xlsx file, with 3 different accessible sheets.
+2. This program will soon be launched on docker to make it easier to run by any individual.
+3. This program will let you enter files through an upload menu.
 
 ##### If you want to add any specific requests for this program, please add a git-issue or email me.
