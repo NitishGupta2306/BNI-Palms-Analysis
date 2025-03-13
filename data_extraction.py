@@ -12,7 +12,11 @@ border_style = Border(left=Side(style="thin"), right=Side(style="thin"), top=Sid
 center_align = Alignment(horizontal="center", vertical="center")
 
 # Persistent referral matrix (dictionary of dictionaries)
-member_names = extract_names_from_excel("Member Names/united_members.xlsx")
+member_names = extract_names_from_excel("Member Names/united_members.xlsx")  
+# converting the names to be standardized
+for i,member_name in enumerate(member_names):
+    member_names[i] = (member_name.replace(" ","")).lower()
+
 referral_matrix = {giver: {receiver: 0 for receiver in member_names} for giver in member_names}
 OTO_matrix = {giver: {receiver: 0 for receiver in member_names} for giver in member_names}
 combination_matrix = {giver: {receiver: 0 for receiver in member_names} for giver in member_names}
@@ -51,13 +55,22 @@ def process_referral_excel_data(file_path):
     column_reciever_name = sheet["B"]
 
     for cell_slip_type, cell_giver_name, cell_reciever_name in zip(column_slip_type, column_giver_name, column_reciever_name):
-        if (cell_reciever_name.value in member_names and
-            cell_giver_name.value in member_names and
+        reciever = cell_reciever_name.value
+        giver = cell_giver_name.value
+
+        if(reciever != None): 
+            reciever = reciever.replace(" ", "").lower()
+        
+        if(giver != None):
+            giver = giver.replace(" ", "").lower()
+        
+        print(reciever)
+
+        if (reciever in member_names and
+            giver in member_names and
             cell_slip_type.value == "Referral"):
 
-            giver = cell_giver_name.value
-            receiver = cell_reciever_name.value
-            referral_matrix[giver][receiver] += 1  # Increment count instead of resetting
+            referral_matrix[giver][reciever] += 1  # Increment count instead of resetting
 
     return referral_matrix  # Return updated matrix
 
@@ -71,13 +84,20 @@ def process_OTO_excel_data(file_path):
     column_reciever_name = sheet["B"]
 
     for cell_slip_type, cell_giver_name, cell_reciever_name in zip(column_slip_type, column_giver_name, column_reciever_name):
-        if (cell_reciever_name.value in member_names and
-            cell_giver_name.value in member_names and
+        reciever = cell_reciever_name.value
+        giver = cell_giver_name.value
+
+        if(reciever != None): 
+            reciever = reciever.replace(" ", "").lower()
+        
+        if(giver != None):
+            giver = giver.replace(" ", "").lower()
+
+        if (reciever in member_names and
+            giver in member_names and
             cell_slip_type.value == "One to One"):
 
-            giver = cell_giver_name.value
-            receiver = cell_reciever_name.value
-            OTO_matrix[giver][receiver] += 1  # Increment count instead of resetting
+            OTO_matrix[giver][reciever] += 1  # Increment count instead of resetting
 
     return OTO_matrix  # Return updated matrix
 
