@@ -1,6 +1,5 @@
 streamlit
 pandas
-os
 subprocess
 xml.etree.ElementTree
 openpyxl
