@@ -2,8 +2,11 @@ from member_extraction import extract_names_from_excel
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import PatternFill, Border, Side, Alignment, Font
 from openpyxl.utils import get_column_letter
+from fileconversion import convert_xls_to_xlsx
+
 
 import pandas as pd
+import os
 
 '''GLOBAL VARIABLES:'''
 # Styling variables for all cells.
@@ -11,8 +14,17 @@ zero_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="sol
 border_style = Border(left=Side(style="thin"), right=Side(style="thin"), top=Side(style="thin"), bottom=Side(style="thin"))
 center_align = Alignment(horizontal="center", vertical="center")
 
-# Persistent referral matrix (dictionary of dictionaries)
-member_names = extract_names_from_excel("Member Names/united_members.xlsx")  
+# Converting member names file to xlsx format.
+for files in os.listdir("Member Names"):
+    file_path = f"Member Names/{files}"
+    
+    if files.endswith(".xls"):
+        new_file_path = convert_xls_to_xlsx(file_path)
+        file_path = new_file_path  # Update the file path to the new .xlsx file
+
+    if files.endswith(".xlsx"):
+        member_names = extract_names_from_excel(file_path)  
+
 # converting the names to be standardized
 for i,member_name in enumerate(member_names):
     member_names[i] = (member_name.replace(" ","")).lower()
@@ -64,8 +76,6 @@ def process_referral_excel_data(file_path):
         if(giver != None):
             giver = giver.replace(" ", "").lower()
         
-        print(reciever)
-
         if (reciever in member_names and
             giver in member_names and
             cell_slip_type.value == "Referral"):
