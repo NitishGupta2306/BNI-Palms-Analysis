@@ -1,0 +1,7 @@
+streamlit
+pandas
+os
+subprocess
+Path
+xml.etree.ElementTree
+openpyxl
