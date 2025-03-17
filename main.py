@@ -1,9 +1,15 @@
 import os
 import subprocess
-subprocess.run(["pip", "install", "--no-cache-dir", "pandas"])
+subprocess.run(["uv", "pip", "install", "--force-reinstall", "pandas"])
 import pandas as pd
 from fileconversion import convert_xls_to_xlsx
 from data_extraction import data_extraction, final_referral_data_to_excel, final_OTO_data_to_excel, final_combination_data_to_excel
+
+import sys
+print("Python Executable:", sys.executable)
+print("Python Version:", sys.version)
+print("Python Path:", sys.path)
+print("Installed Packages:", os.system("pip list"))
 
 # Processing all excel file
 for files in os.listdir("Excel Files"):
