@@ -1,5 +1,4 @@
 import os
-import pandas as pd
 from fileconversion import convert_xls_to_xlsx
 from data_extraction import data_extraction, final_referral_data_to_excel, final_OTO_data_to_excel, final_combination_data_to_excel
 
