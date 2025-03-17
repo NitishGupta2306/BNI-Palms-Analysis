@@ -210,8 +210,7 @@ def final_referral_data_to_excel(output_file):
         cell_styling(unique_cell_recieved, True)
 
     cell_autosizing(ws)
-    wb.save(output_file)
-    print(f"Referral matrix exported successfully to {output_file}")
+    wb.save(f"Reports/{output_file}")
 
 def final_OTO_data_to_excel(output_file):
     wb = Workbook()
@@ -248,8 +247,7 @@ def final_OTO_data_to_excel(output_file):
         cell_styling(unique_cell, True)
 
     cell_autosizing(ws)
-    wb.save(output_file)
-    print(f"OTO matrix exported successfully to {output_file}")
+    wb.save(f"Reports/{output_file}")
 
 def final_combination_data_to_excel(output_file):
     wb = Workbook()
@@ -301,8 +299,7 @@ def final_combination_data_to_excel(output_file):
         cell_styling(cell_type_3, True)
 
     cell_autosizing(ws)
-    wb.save(output_file)
-    print(f"Referral matrix exported successfully to {output_file}")
+    wb.save(f"Reports/{output_file}")
 
 '''CALLING FUNCTION FOR MAIN'''
 # Wrapper function to process referrals and export results

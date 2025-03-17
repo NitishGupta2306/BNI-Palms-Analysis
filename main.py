@@ -10,7 +10,6 @@ for files in os.listdir("Excel Files"):
 
 for files in os.listdir("Excel Files"):
     if files.endswith(".xlsx"):
-        print(f"Processing {files}...")  # Log the file being processed
         data_extraction(f"Excel Files/{files}")
 
 

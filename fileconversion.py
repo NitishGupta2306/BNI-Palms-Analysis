@@ -46,5 +46,3 @@ def convert_xls_to_xlsx(file_path):
 
     # Delete original .xls file
     os.remove(file_path)
-
-    print(f"Conversion successful! Saved as '{output_file}' and deleted '{file_path}'.")
