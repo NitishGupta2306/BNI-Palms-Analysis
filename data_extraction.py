@@ -4,10 +4,6 @@ from openpyxl.styles import PatternFill, Border, Side, Alignment, Font
 from openpyxl.utils import get_column_letter
 from fileconversion import convert_xls_to_xlsx
 
-
-import pandas as pd
-import os
-
 '''GLOBAL VARIABLES:'''
 # Styling variables for all cells.
 zero_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
