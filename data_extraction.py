@@ -4,6 +4,8 @@ from openpyxl.styles import PatternFill, Border, Side, Alignment, Font
 from openpyxl.utils import get_column_letter
 from fileconversion import convert_xls_to_xlsx
 
+import os
+
 '''GLOBAL VARIABLES:'''
 # Styling variables for all cells.
 zero_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
@@ -103,7 +105,9 @@ def process_OTO_excel_data(file_path):
             giver in member_names and
             cell_slip_type.value == "One to One"):
 
-            OTO_matrix[giver][reciever] += 1  # Increment count instead of resetting
+            # Increment count instead of resetting
+            OTO_matrix[giver][reciever] += 1  
+            OTO_matrix[reciever][giver] += 1
 
     return OTO_matrix  # Return updated matrix
 
