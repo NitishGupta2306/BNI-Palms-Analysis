@@ -1,5 +1,8 @@
 # BNI-Palms-Analysis
 
+### Deployment:
+This program is currently deployed on https://bni-palms-analysis.onrender.com. There are still daily updates coming.
+
 ### Use case for this program:
 ##### This program generates a report for BNI usings PALMS data. It does the following:
 
@@ -36,11 +39,5 @@
     - 2: implies that a referral has been passed, but no OTO was done.
     - 3: implies that both a OTO was conducted and a referral was passed.
 3. The right-most columns show the totals for each of the above mentioned types.
-
----
-### Upcoming Features:
-1. Combining these three files into one .xlsx file, with 3 different accessible sheets.
-2. This program will soon be launched on docker to make it easier to run by any individual.
-3. This program will let you enter files through an upload menu.
 
 ##### If you want to add any specific requests for this program, please add a git-issue or email me.
