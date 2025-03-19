@@ -44,16 +44,25 @@ def cell_styling(self, bold = False):
 # Function to auto-adjust column widths
 def cell_autosizing(ws):
     members = list(referral_matrix.keys())
-    for col in range(1, len(members) + 4): # +3 for the title colums.
+
+    # Rotate the first row 90 degrees for readability
+    for col in range(1, len(members) + 4):  # +3 for the title columns
+        ws.cell(row=1, column=col).alignment = Alignment(textRotation=90)
+
+    # Auto sizing all columns
+    for col in range(2, len(members) + 4): # +3 for the title colums.
         max_length = 0
         col_letter = get_column_letter(col)
         # Find the maximum length of content in the column
-        for row in range(1, len(members) + 4):
+        for row in range(2, len(members) + 4):
             cell_value = ws.cell(row=row, column=col).value
             if cell_value:
                 max_length = max(max_length, len(str(cell_value)))
         # Set the column width to fit content
-        ws.column_dimensions[col_letter].width = max_length
+        ws.column_dimensions[col_letter].width = max_length + 2
+    
+    # Set the width of the first column to fit most names
+    ws.column_dimensions["A"].width = 35
 
 '''UPDATING MATRIX FUNCTIONS:'''
 # Function to process Excel data and update the referral matrix.
