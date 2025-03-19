@@ -15,13 +15,14 @@ center_align = Alignment(horizontal="center", vertical="center")
 # Converting member names file to xlsx format.
 for files in os.listdir("Member Names"):
     file_path = f"Member Names/{files}"
-    
     if files.endswith(".xls"):
-        new_file_path = convert_xls_to_xlsx(file_path)
-        file_path = new_file_path  # Update the file path to the new .xlsx file
+        convert_xls_to_xlsx(file_path)
 
-    if files.endswith(".xlsx"):
-        member_names = extract_names_from_excel(file_path)  
+        # temp fix for converting filepath to .xlsx from .xls
+        file_path = file_path + "x"
+
+    # getting df from excel
+    member_names = extract_names_from_excel(file_path)  
 
 # converting the names to be standardized
 for i,member_name in enumerate(member_names):
