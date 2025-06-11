@@ -3,6 +3,11 @@ import subprocess
 import os
 from pathlib import Path
 
+if "uploader_key_reports" not in st.session_state:
+    st.session_state.uploader_key_reports = 0
+if "uploader_key_names" not in st.session_state:
+    st.session_state.uploader_key_names = 0
+
 # Directory to save uploaded files
 SAVE_DIR_DATA = "Excel Files"
 SAVE_DIR_NAME = "Member Names"
@@ -29,7 +34,12 @@ Follow these steps:
 
 st.write("## Upload Reports:")
 # File uploader (accepting multiple files)
-uploaded_files = st.file_uploader("Choose Excel slip-audit-reports", type=["xls", "xlsx"], accept_multiple_files=True)
+uploaded_files = st.file_uploader(
+    "Choose Excel slip-audit-reports",
+    type=["xls", "xlsx"],
+    accept_multiple_files=True,
+    key=f"reports_uploader_{st.session_state.uploader_key_reports}"
+)
 
 if uploaded_files:
     for uploaded_file in uploaded_files:
@@ -37,7 +47,11 @@ if uploaded_files:
         with open(file_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
 
-uploaded_names = st.file_uploader("Choose Excel with member names", type=["xls", "xlsx"])
+uploaded_names = st.file_uploader(
+    "Choose Excel with member names",
+    type=["xls", "xlsx"],
+    key=f"names_uploader_{st.session_state.uploader_key_names}"
+)
 
 if uploaded_names:
     file_path = Path(SAVE_DIR_NAME) / uploaded_names.name
@@ -78,24 +92,22 @@ if st.session_state.reports_ready and os.listdir(DIR_REPORTS):
             st.download_button(label=f"Download {file}", data=f, file_name=file, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 if st.button("Clear Uploaded Files"):
-    # Remove all files in SAVE_DIR_NAME
-    if os.path.exists(SAVE_DIR_NAME):
-        for file in os.listdir(SAVE_DIR_NAME):
-            file_path = os.path.join(SAVE_DIR_NAME, file)
-            if os.path.isfile(file_path):
-                os.remove(file_path)
+    # Delete files from directories
+    for folder in [SAVE_DIR_NAME, SAVE_DIR_DATA, DIR_REPORTS]:
+        if os.path.exists(folder):
+            for file in os.listdir(folder):
+                file_path = os.path.join(folder, file)
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
 
-    # Remove all files in SAVE_DIR_DATA
-    if os.path.exists(SAVE_DIR_DATA):
-        for file in os.listdir(SAVE_DIR_DATA):
-            file_path = os.path.join(SAVE_DIR_DATA, file)
-            if os.path.isfile(file_path):
-                os.remove(file_path)
-
-    # Clear any session state related to uploads
+    # Clear session state
     for key in list(st.session_state.keys()):
         if key.startswith("uploaded_file") or key in ["reports_ready", "file_uploader"]:
             del st.session_state[key]
 
-    st.success("Uploaded files and related session cache have been cleared.")
+    # Increment uploader keys to reset widgets
+    st.session_state.uploader_key_reports += 1
+    st.session_state.uploader_key_names += 1
+
+    # Force rerun
     st.rerun()
