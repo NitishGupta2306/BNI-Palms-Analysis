@@ -98,3 +98,4 @@ if st.button("Clear Uploaded Files"):
             del st.session_state[key]
 
     st.success("Uploaded files and related session cache have been cleared.")
+    st.rerun()
