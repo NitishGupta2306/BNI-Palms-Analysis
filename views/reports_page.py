@@ -76,3 +76,25 @@ if st.session_state.reports_ready and os.listdir(DIR_REPORTS):
         file_path = os.path.join(DIR_REPORTS, file)
         with open(file_path, "rb") as f:
             st.download_button(label=f"Download {file}", data=f, file_name=file, mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+if st.button("Clear Uploaded Files"):
+    # Remove all files in SAVE_DIR_NAME
+    if os.path.exists(SAVE_DIR_NAME):
+        for file in os.listdir(SAVE_DIR_NAME):
+            file_path = os.path.join(SAVE_DIR_NAME, file)
+            if os.path.isfile(file_path):
+                os.remove(file_path)
+
+    # Remove all files in SAVE_DIR_DATA
+    if os.path.exists(SAVE_DIR_DATA):
+        for file in os.listdir(SAVE_DIR_DATA):
+            file_path = os.path.join(SAVE_DIR_DATA, file)
+            if os.path.isfile(file_path):
+                os.remove(file_path)
+
+    # Clear any session state related to uploads
+    for key in list(st.session_state.keys()):
+        if key.startswith("uploaded_file") or key in ["reports_ready", "file_uploader"]:
+            del st.session_state[key]
+
+    st.success("Uploaded files and related session cache have been cleared.")
