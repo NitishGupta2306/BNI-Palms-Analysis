@@ -14,11 +14,17 @@ report_page = st.Page(
     icon = ":material/partner_exchange:",
 )
 
+combination_comparison_page = st.Page(
+    page = "views/combination_matrix_comparison_page.py",
+    title = "Combination Matrix Comparison",
+    icon = ":material/compare:",
+)
+
 # Navigation setup:
 pg = st.navigation(
     {
         "Info": [intro_page],
-        "Reports": [report_page],
+        "Reports": [report_page, combination_comparison_page],
     }
 )
 pg.run()
