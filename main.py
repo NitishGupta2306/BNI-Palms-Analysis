@@ -1,20 +1,60 @@
-import os
-from fileconversion import convert_xls_to_xlsx
-from data_extraction import data_extraction, final_referral_data_to_excel, final_OTO_data_to_excel, final_combination_data_to_excel
+#!/usr/bin/env python3
+"""
+Legacy main.py entry point for BNI PALMS Analysis.
+
+This file maintains backward compatibility while using the new architecture.
+For the new CLI interface, use: python -m src.presentation.cli.main
+"""
 
 import sys
+from pathlib import Path
 
-# Processing all excel file
-for files in os.listdir("Excel Files"):
-    if files.endswith(".xls"):
-        convert_xls_to_xlsx(f"Excel Files/{files}")
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-for files in os.listdir("Excel Files"):
-    if files.endswith(".xlsx"):
-        data_extraction(f"Excel Files/{files}")
+from src.application.use_cases.generate_reports import GenerateReportsUseCase
+from src.infrastructure.config.settings import configure_app
 
 
-final_referral_data_to_excel("referral_matrix.xlsx")
-final_OTO_data_to_excel("OTO_matrix.xlsx")
-final_combination_data_to_excel("combination_matrix.xlsx")
+def main():
+    """Main entry point using the new architecture."""
+    print("🔧 BNI PALMS Analysis - Legacy Mode")
+    print("=" * 40)
+    
+    try:
+        # Initialize the application
+        configure_app()
+        
+        # Use the new architecture to generate reports
+        use_case = GenerateReportsUseCase()
+        
+        print("📊 Generating reports from uploaded files...")
+        response = use_case.generate_quick_report()
+        
+        if response.success:
+            print("✅ Reports generated successfully!")
+            print("📄 Generated files:")
+            for file_path in response.generated_files:
+                print(f"   • {file_path.name}")
+            
+            if response.execution_time_seconds:
+                print(f"⏱️  Processing time: {response.execution_time_seconds:.2f} seconds")
+        else:
+            print("❌ Report generation failed!")
+            for error in response.errors:
+                print(f"   • {error}")
+        
+        # Display warnings
+        for warning in response.warnings:
+            print(f"⚠️  {warning}")
+            
+    except Exception as e:
+        print(f"❌ Error: {str(e)}")
+        print("\n💡 For more features, use the Streamlit web interface:")
+        print("   streamlit run streamlit_app.py")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
 

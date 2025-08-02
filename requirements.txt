@@ -1,3 +1,12 @@
-pandas
-streamlit
-openpyxl
+# Core dependencies for BNI PALMS Analysis
+pandas>=2.0.0
+streamlit>=1.28.0
+openpyxl>=3.1.0
+
+# Optional: For older Excel format support (.xls files)
+xlrd>=2.0.0
+
+# Development and testing (optional)
+pytest>=7.0.0
+black>=23.0.0
+flake8>=6.0.0

@@ -1,14 +1,78 @@
-# BNI-Palms-Analysis
+# BNI PALMS Analysis
 
-### Deployment:
-This program is currently deployed on https://bni-palms-analysis.onrender.com. There are still daily updates coming.
+A modern, clean architecture application for analyzing BNI PALMS data and generating comprehensive member interaction reports.
 
-### Use case for this program:
-##### This program generates a report for BNI usings PALMS data. It does the following:
+## 🚀 Quick Start
 
-1. Compiles as many palms report files as you give it.
-2. Compiles the member names from a membership list
-3. Generates two reports: refferal_matrix.xlsx and OTP_matrix.xlsx
+### Web Interface (Recommended)
+```bash
+streamlit run streamlit_app.py
+```
+
+### Command Line Interface
+```bash
+python3 -m src.presentation.cli.main
+```
+
+### Legacy Mode (Backward Compatibility)
+```bash
+python3 main.py
+```
+
+## 📦 Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd BNI-Palms-Analysis
+   ```
+
+2. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Run the application**
+   ```bash
+   streamlit run streamlit_app.py
+   ```
+
+## 🏗️ Architecture
+
+This application follows **Clean Architecture** principles with clear separation of concerns:
+
+- **Domain Layer**: Core business logic and entities
+- **Application Layer**: Use cases and application services  
+- **Infrastructure Layer**: Data access and external dependencies
+- **Presentation Layer**: User interfaces (Web and CLI)
+
+For detailed architecture documentation, see [ARCHITECTURE.md](ARCHITECTURE.md).
+
+## 📊 Features
+
+### Analysis Reports Generated:
+1. **Referral Matrix** (`referral_matrix.xlsx`)
+2. **One-to-One Matrix** (`OTO_matrix.xlsx`) 
+3. **Combination Matrix** (`combination_matrix.xlsx`)
+
+### Matrix Comparison
+- Compare old vs new matrices
+- Highlight changes and improvements
+- Generate comparison reports
+
+### Multiple Interfaces
+- **Web Interface**: Interactive Streamlit application
+- **CLI Interface**: Command-line tool for automation
+- **Legacy Support**: Backward compatibility with old scripts
+
+## 📁 Usage
+
+### Input Files Required:
+1. **PALMS Excel Reports**: Place in `Excel Files/` directory
+2. **Member Names**: Place member list Excel files in `Member Names/` directory
+
+### Output Files:
+Generated reports are saved in the `Reports/` directory.
 
 ---
 ### Generated Files:
