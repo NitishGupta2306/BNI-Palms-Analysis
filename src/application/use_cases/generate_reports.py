@@ -67,11 +67,27 @@ class GenerateReportsUseCase:
                 except Exception as e:
                     response.add_error(f"Failed to generate combination matrix: {str(e)}")
             
+            # Always generate TYFCB data if TYFCB entries exist
+            print(f"Debug: Found {len(report.tyfcbs)} TYFCB entries in report")
+            if report.tyfcbs:
+                try:
+                    print(f"Debug: Generating TYFCB data file...")
+                    file_path = self._export_tyfcb_data(report, output_dir)
+                    response.add_generated_file(file_path)
+                    print(f"Debug: TYFCB data file generated successfully: {file_path}")
+                except Exception as e:
+                    print(f"Debug: TYFCB export failed: {str(e)}")
+                    response.add_error(f"Failed to generate TYFCB data: {str(e)}")
+            else:
+                print("Debug: No TYFCB entries found, skipping TYFCB data generation")
+            
             # Add metadata
             response.metadata = {
                 'total_members': len(report.all_members),
                 'total_referrals': report.metadata.get('total_referrals', 0),
                 'total_one_to_ones': report.metadata.get('total_one_to_ones', 0),
+                'total_tyfcbs': report.metadata.get('total_tyfcbs', 0),
+                'total_tyfcb_amount': report.metadata.get('total_tyfcb_amount', 0),
                 'files_generated': len(response.generated_files),
                 'output_directory': str(output_dir)
             }
@@ -122,6 +138,20 @@ class GenerateReportsUseCase:
             
         except Exception as e:
             raise ExportError(f"Failed to export combination matrix: {str(e)}")
+    
+    def _export_tyfcb_data(self, report, output_dir: Path) -> Path:
+        """Export the TYFCB data to Excel."""
+        try:
+            file_path = output_dir / FileNames.TYFCB_DATA
+            self.export_service.export_tyfcb_data(
+                report.all_members,
+                report.tyfcbs,
+                file_path
+            )
+            return file_path
+            
+        except Exception as e:
+            raise ExportError(f"Failed to export TYFCB data: {str(e)}")
     
     def generate_quick_report(self) -> ReportGenerationResponse:
         """

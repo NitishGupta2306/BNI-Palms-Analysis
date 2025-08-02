@@ -5,7 +5,10 @@
       "Bash(touch:*)",
       "Bash(rm:*)",
       "Bash(python:*)",
-      "Bash(head:*)"
+      "Bash(head:*)",
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "Bash(streamlit run:*)"
     ],
     "deny": []
   }

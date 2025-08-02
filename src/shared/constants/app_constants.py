@@ -53,6 +53,7 @@ class FileNames:
     OTO_MATRIX = "OTO_matrix.xlsx"
     COMBINATION_MATRIX = "combination_matrix.xlsx"
     COMBINATION_COMPARISON = "combination_matrix_comparison.xlsx"
+    TYFCB_DATA = "tyfcb_data.xlsx"
 
 
 class StreamlitConfig:

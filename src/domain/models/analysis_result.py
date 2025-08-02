@@ -3,6 +3,7 @@ from typing import Dict, List, Any, Optional
 from enum import Enum
 
 from .member import Member
+from .tyfcb import TYFCB
 
 
 class MatrixType(Enum):
@@ -111,6 +112,7 @@ class AnalysisReport:
     referral_matrix: AnalysisMatrix
     one_to_one_matrix: AnalysisMatrix
     combination_matrix: AnalysisMatrix
+    tyfcbs: List[TYFCB] = field(default_factory=list)
     comparison_result: Optional[ComparisonResult] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
     

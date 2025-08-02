@@ -180,13 +180,16 @@ def _generate_reports(generate_reports_use_case: GenerateReportsUseCase,
                 with details_placeholder.container():
                     st.write("### 📊 Data Processing Results")
                     
-                    col1, col2, col3 = st.columns(3)
+                    col1, col2, col3, col4 = st.columns(4)
                     with col1:
                         st.metric("Members Loaded", process_response.members_count)
                     with col2:
                         st.metric("Referrals Found", process_response.referrals_count)
                     with col3:
                         st.metric("One-to-Ones Found", process_response.one_to_ones_count)
+                    with col4:
+                        tyfcb_count = getattr(process_response, 'tyfcbs_count', 0)
+                        st.metric("TYFCBs Found", tyfcb_count)
                     
                     if process_response.data_quality_report:
                         create_data_quality_display(process_response.data_quality_report)

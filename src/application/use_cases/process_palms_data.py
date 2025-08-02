@@ -10,6 +10,7 @@ from src.domain.services.analysis_service import AnalysisService
 from src.domain.models.member import Member
 from src.domain.models.referral import Referral
 from src.domain.models.one_to_one import OneToOne
+from src.domain.models.tyfcb import TYFCB
 from src.domain.exceptions.domain_exceptions import DataProcessingError
 from src.infrastructure.data.file_handlers.file_converter import FileConverter
 from src.infrastructure.config.paths import get_path_manager
@@ -58,16 +59,17 @@ class ProcessPalmsDataUseCase:
                 return response
             
             # Load PALMS data
-            referrals, one_to_ones = self._load_palms_data(
+            referrals, one_to_ones, tyfcbs = self._load_palms_data(
                 request.data_directory, members, response
             )
             response.referrals_count = len(referrals)
             response.one_to_ones_count = len(one_to_ones)
+            response.tyfcbs_count = len(tyfcbs)
             
             # Validate data quality if requested
             if request.validate_data:
                 quality_report = self.analysis_service.validate_data_quality(
-                    members, referrals, one_to_ones
+                    members, referrals, one_to_ones, tyfcbs
                 )
                 response.data_quality_report = quality_report
                 
@@ -135,7 +137,7 @@ class ProcessPalmsDataUseCase:
             return []
     
     def _load_palms_data(self, data_directory: Path, members: List[Member],
-                        response: ProcessPalmsDataResponse) -> Tuple[List[Referral], List[OneToOne]]:
+                        response: ProcessPalmsDataResponse) -> Tuple[List[Referral], List[OneToOne], List[TYFCB]]:
         """Load PALMS data from the data directory."""
         try:
             # Temporarily set the Excel files directory path
@@ -143,18 +145,18 @@ class ProcessPalmsDataUseCase:
             self.path_manager.settings.directories.excel_files = str(data_directory)
             
             try:
-                referrals, one_to_ones = self.analysis_service.load_palms_data(members)
-                return referrals, one_to_ones
+                referrals, one_to_ones, tyfcbs = self.analysis_service.load_palms_data(members)
+                return referrals, one_to_ones, tyfcbs
             finally:
                 # Restore original path
                 self.path_manager.settings.directories.excel_files = original_excel_dir
                 
         except DataProcessingError as e:
             response.add_error(f"Failed to load PALMS data: {str(e)}")
-            return [], []
+            return [], [], []
         except Exception as e:
             response.add_error(f"Unexpected error loading PALMS data: {str(e)}")
-            return [], []
+            return [], [], []
     
     def _get_processed_files(self, data_directory: Path, 
                            member_directory: Path) -> List[Path]:

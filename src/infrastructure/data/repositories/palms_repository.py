@@ -63,36 +63,109 @@ class PalmsRepository:
                     receiver_name = row[ExcelColumns.RECEIVER_NAME.value] if len(row) > ExcelColumns.RECEIVER_NAME.value else None
                     slip_type = row[ExcelColumns.SLIP_TYPE.value] if len(row) > ExcelColumns.SLIP_TYPE.value else None
                     
-                    if not all([giver_name, receiver_name, slip_type]):
+                    # Basic validation - slip_type is always required
+                    if not slip_type:
                         continue
                     
-                    # Normalize names and find members
-                    giver = self._find_member_by_name(str(giver_name), member_lookup)
-                    receiver = self._find_member_by_name(str(receiver_name), member_lookup)
+                    # Normalize slip type first to check if it's TYFCB
+                    normalized_slip_type = self._normalize_slip_type(slip_type)
                     
-                    if not giver or not receiver:
-                        continue  # Skip if we can't find both members
+                    # For TYFCB: only receiver_name is required (From field is empty)
+                    # For others: both giver_name and receiver_name are required
+                    if normalized_slip_type == SlipType.TYFCB.value:
+                        if not receiver_name:
+                            continue  # TYFCB needs receiver (who got the business)
+                    else:
+                        if not all([giver_name, receiver_name]):
+                            continue  # Referrals and OTOs need both giver and receiver
+                    
+                    # Normalize names and find members
+                    giver = self._find_member_by_name(str(giver_name), member_lookup) if giver_name else None
+                    receiver = self._find_member_by_name(str(receiver_name), member_lookup) if receiver_name else None
+                    
+                    # For TYFCB: only receiver is required
+                    # For others: both giver and receiver are required
+                    if normalized_slip_type == SlipType.TYFCB.value:
+                        if not receiver:
+                            continue  # Skip TYFCB if we can't find the receiver
+                    else:
+                        if not giver or not receiver:
+                            continue  # Skip if we can't find both members
                     
                     # Process based on slip type
-                    if slip_type == SlipType.REFERRAL.value:
+                    if normalized_slip_type == SlipType.REFERRAL.value:
                         referral = Referral(giver=giver, receiver=receiver)
                         referrals.append(referral)
                         
-                    elif slip_type == SlipType.ONE_TO_ONE.value:
+                    elif normalized_slip_type == SlipType.ONE_TO_ONE.value:
                         one_to_one = OneToOne(member1=giver, member2=receiver)
                         one_to_ones.append(one_to_one)
+                        
+                    elif normalized_slip_type == SlipType.TYFCB.value:
+                        # Debug: Log TYFCB detection
+                        giver_name_debug = giver.full_name if giver else "None"
+                        print(f"Debug: Found TYFCB entry on row {row_idx}: from {giver_name_debug} -> to {receiver.full_name}, original slip_type: {repr(slip_type)}")
+                        
+                        # Extract TYFCB amount and detail
+                        tyfcb_amount = row[ExcelColumns.TYFCB_AMOUNT.value] if len(row) > ExcelColumns.TYFCB_AMOUNT.value else None
+                        detail = row[ExcelColumns.DETAIL.value] if len(row) > ExcelColumns.DETAIL.value else None
+                        
+                        print(f"Debug: TYFCB amount raw: {repr(tyfcb_amount)}, detail raw: {repr(detail)}")
+                        
+                        # Parse amount - handle currency formatting
+                        try:
+                            if tyfcb_amount is not None:
+                                # Remove common currency formatting
+                                amount_str = str(tyfcb_amount).replace('$', '').replace(',', '').strip()
+                                amount = float(amount_str) if amount_str else 0.0
+                            else:
+                                amount = 0.0
+                        except (ValueError, TypeError):
+                            amount = 0.0
+                            print(f"Debug: Failed to parse TYFCB amount '{tyfcb_amount}', defaulting to 0.0")
+                        
+                        # Determine if within chapter (empty detail field means within chapter)
+                        within_chapter = detail is None or str(detail).strip() == ""
+                        
+                        print(f"Debug: Parsed amount: {amount}, within_chapter: {within_chapter}")
+                        
+                        # Create TYFCB entry (focused on receiver, giver is optional)
+                        if amount > 0:  # Only add TYFCB entries with valid amounts
+                            tyfcb = TYFCB(
+                                receiver=receiver,  # Primary focus: who received the business
+                                amount=amount,
+                                within_chapter=within_chapter,
+                                giver=giver,  # Optional: may be None for TYFCB entries
+                                description=str(detail) if detail else None
+                            )
+                            tyfcbs.append(tyfcb)
+                            print(f"Debug: Added TYFCB entry: {tyfcb}")
+                        else:
+                            print(f"Debug: Skipped TYFCB entry due to zero/invalid amount: {amount}")
+                    
+                    else:
+                        # Debug: Log unrecognized slip types
+                        if slip_type and str(slip_type).strip():
+                            print(f"Debug: Unhandled slip type on row {row_idx}: {repr(slip_type)} (normalized: {repr(normalized_slip_type)})")
                 
                 except Exception as e:
                     # Log the error but continue processing other rows
                     print(f"Warning: Error processing row {row_idx} in {file_path}: {e}")
                     continue
             
-            return referrals, one_to_ones
+            # Debug: Summary of what was extracted
+            print(f"Debug: Extraction summary for {file_path}:")
+            print(f"  - Referrals: {len(referrals)}")
+            print(f"  - One-to-Ones: {len(one_to_ones)}")
+            print(f"  - TYFCBs: {len(tyfcbs)}")
+            print(f"  - Total rows processed: {row_idx}")
+            
+            return referrals, one_to_ones, tyfcbs
             
         except Exception as e:
             raise DataProcessingError(f"Error extracting PALMS data from {file_path}: {str(e)}")
     
-    def load_all_palms_data(self, members: List[Member]) -> Tuple[List[Referral], List[OneToOne]]:
+    def load_all_palms_data(self, members: List[Member]) -> Tuple[List[Referral], List[OneToOne], List[TYFCB]]:
         """
         Load all PALMS data from the Excel files directory.
         
@@ -100,11 +173,12 @@ class PalmsRepository:
             members: List of valid members to match against
             
         Returns:
-            Tuple of (all_referrals, all_one_to_ones)
+            Tuple of (all_referrals, all_one_to_ones, all_tyfcbs)
         """
         try:
             all_referrals = []
             all_one_to_ones = []
+            all_tyfcbs = []
             
             excel_files = self.path_manager.get_excel_files()
             
@@ -113,20 +187,71 @@ class PalmsRepository:
             
             for file_path in excel_files:
                 try:
-                    referrals, one_to_ones = self.extract_palms_data_from_file(file_path, members)
+                    referrals, one_to_ones, tyfcbs = self.extract_palms_data_from_file(file_path, members)
                     all_referrals.extend(referrals)
                     all_one_to_ones.extend(one_to_ones)
+                    all_tyfcbs.extend(tyfcbs)
                     
                 except DataProcessingError as e:
                     print(f"Warning: Error processing PALMS file {file_path}: {e}")
                     continue
             
-            return all_referrals, all_one_to_ones
+            return all_referrals, all_one_to_ones, all_tyfcbs
             
         except Exception as e:
             if isinstance(e, DataProcessingError):
                 raise
             raise DataProcessingError(f"Error loading all PALMS data: {str(e)}")
+    
+    def _normalize_slip_type(self, slip_type: str) -> Optional[str]:
+        """
+        Normalize slip type for robust matching.
+        
+        Args:
+            slip_type: Raw slip type from Excel
+            
+        Returns:
+            Normalized slip type or None if not recognized
+        """
+        if not slip_type or not isinstance(slip_type, str):
+            return None
+        
+        # Normalize: strip whitespace and convert to standard case
+        normalized = slip_type.strip()
+        
+        # Check for exact matches first
+        if normalized == SlipType.REFERRAL.value:
+            return SlipType.REFERRAL.value
+        elif normalized == SlipType.ONE_TO_ONE.value:
+            return SlipType.ONE_TO_ONE.value
+        elif normalized == SlipType.TYFCB.value:
+            return SlipType.TYFCB.value
+        
+        # Check for case-insensitive matches
+        normalized_upper = normalized.upper()
+        if normalized_upper == SlipType.REFERRAL.value.upper():
+            return SlipType.REFERRAL.value
+        elif normalized_upper == SlipType.ONE_TO_ONE.value.upper():
+            return SlipType.ONE_TO_ONE.value
+        elif normalized_upper == SlipType.TYFCB.value.upper():
+            return SlipType.TYFCB.value
+        
+        # Check for common variations
+        # TYFCB variations
+        if normalized_upper in ['TYFCB', 'TY FCB', 'TY-FCB', 'THANK YOU FCB', 'THANK YOU FOR CLOSE BUSINESS']:
+            return SlipType.TYFCB.value
+        
+        # One-to-One variations
+        if normalized_upper in ['ONE TO ONE', 'ONE-TO-ONE', '1-TO-1', '1 TO 1', 'OTO', 'ONE2ONE']:
+            return SlipType.ONE_TO_ONE.value
+        
+        # Referral variations
+        if normalized_upper in ['REFERRAL', 'REF', 'REFERRALS']:
+            return SlipType.REFERRAL.value
+        
+        # Log unrecognized slip types for debugging
+        print(f"Warning: Unrecognized slip type: {repr(slip_type)} (normalized: {repr(normalized)})")
+        return None
     
     def _find_member_by_name(self, name: str, member_lookup: dict) -> Optional[Member]:
         """
@@ -153,13 +278,15 @@ class PalmsRepository:
             return None
     
     def get_palms_data_statistics(self, referrals: List[Referral], 
-                                one_to_ones: List[OneToOne]) -> dict:
+                                one_to_ones: List[OneToOne], 
+                                tyfcbs: List[TYFCB] = None) -> dict:
         """
         Get statistics about PALMS data.
         
         Args:
             referrals: List of referrals
             one_to_ones: List of one-to-one meetings
+            tyfcbs: List of TYFCB entries (optional for backward compatibility)
             
         Returns:
             Dictionary with statistics

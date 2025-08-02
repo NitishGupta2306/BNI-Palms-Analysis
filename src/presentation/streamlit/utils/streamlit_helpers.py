@@ -64,7 +64,7 @@ def display_report_generation_results(response: ReportGenerationResponse) -> Non
         if response.metadata:
             st.info("**Report Summary:**")
             metadata = response.metadata
-            col1, col2, col3 = st.columns(3)
+            col1, col2, col3, col4 = st.columns(4)
             
             with col1:
                 st.metric("Total Members", metadata.get('total_members', 0))
@@ -72,11 +72,17 @@ def display_report_generation_results(response: ReportGenerationResponse) -> Non
                 st.metric("Total Referrals", metadata.get('total_referrals', 0))
             with col3:
                 st.metric("Total One-to-Ones", metadata.get('total_one_to_ones', 0))
+            with col4:
+                tyfcb_count = metadata.get('total_tyfcbs', 0)
+                tyfcb_amount = metadata.get('total_tyfcb_amount', 0)
+                st.metric("Total TYFCBs", f"{tyfcb_count} (${tyfcb_amount:,.0f})")
         
         # Display generated files
         if response.generated_files:
             st.write("**📊 Download Your Reports:**")
+            st.write(f"Debug: Found {len(response.generated_files)} generated files")
             for file_path in response.generated_files:
+                st.write(f"Debug: File - {file_path}")
                 create_download_button(file_path, f"📄 Download {file_path.name}")
         
         # Display execution time
@@ -307,7 +313,7 @@ def create_analysis_overview(report: AnalysisReport) -> None:
     st.write("### 📈 Analysis Overview")
     
     # Key metrics
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5 = st.columns(5)
     
     with col1:
         st.metric("Total Members", len(report.all_members))
@@ -321,6 +327,12 @@ def create_analysis_overview(report: AnalysisReport) -> None:
         st.metric("Total One-to-Ones", total_otos)
     
     with col4:
+        total_tyfcbs = report.metadata.get('total_tyfcbs', 0)
+        total_tyfcb_amount = report.metadata.get('total_tyfcb_amount', 0)
+        st.metric("Total TYFCBs", f"{total_tyfcbs}")
+        st.metric("Total Amount", f"${total_tyfcb_amount:,.0f}")
+    
+    with col5:
         # Calculate active members (those with any activity)
         active_members = len([
             m for m in report.all_members

@@ -7,6 +7,8 @@ from openpyxl.styles import PatternFill, Border, Side, Alignment, Font
 
 from src.domain.models.analysis_result import AnalysisMatrix, MatrixType
 from src.domain.models.member import Member
+from src.domain.models.tyfcb import TYFCB
+from src.domain.services.tyfcb_service import TYFCBService, TYFCBSummary
 from src.domain.exceptions.domain_exceptions import ExportError
 from src.infrastructure.data.file_handlers.excel_handler import ExcelHandler
 from src.shared.constants.app_constants import MatrixHeaders, CombinationValues
@@ -356,3 +358,156 @@ class ExportService:
                     
         except Exception as e:
             raise ExportError(f"Error writing member performance: {str(e)}")
+    
+    def export_tyfcb_data(self, members: List[Member], tyfcbs: List[TYFCB], file_path: Path) -> None:
+        """
+        Export TYFCB data to Excel file with detailed breakdown.
+        
+        Args:
+            members: List of all members
+            tyfcbs: List of all TYFCB entries
+            file_path: Output file path
+        """
+        try:
+            # Initialize TYFCB service
+            tyfcb_service = TYFCBService()
+            tyfcb_summary = tyfcb_service.generate_tyfcb_summary(members, tyfcbs)
+            
+            workbook = self.excel_handler.create_styled_workbook()
+            
+            # Create summary sheet
+            summary_sheet = workbook.active
+            summary_sheet.title = "TYFCB Summary"
+            self._write_tyfcb_summary(summary_sheet, tyfcb_summary)
+            
+            # Create member breakdown sheet
+            member_sheet = workbook.create_sheet("TYFCB by Member")
+            self._write_tyfcb_member_breakdown(member_sheet, tyfcb_summary)
+            
+            # Create detailed transactions sheet
+            transactions_sheet = workbook.create_sheet("TYFCB Transactions")
+            self._write_tyfcb_transactions(transactions_sheet, tyfcbs)
+            
+            # Apply styling to all sheets
+            for sheet in workbook.worksheets:
+                for row in sheet.iter_rows():
+                    for cell in row:
+                        if cell.value is not None:
+                            cell.border = Border(left=Side(style="thin"), right=Side(style="thin"),
+                                               top=Side(style="thin"), bottom=Side(style="thin"))
+                self.excel_handler.auto_adjust_column_widths(sheet)
+            
+            # Save workbook
+            self.excel_handler.save_workbook(workbook, file_path)
+            
+        except Exception as e:
+            raise ExportError(f"Failed to export TYFCB data: {str(e)}")
+    
+    def _write_tyfcb_summary(self, worksheet, tyfcb_summary: TYFCBSummary) -> None:
+        """Write TYFCB summary to worksheet."""
+        try:
+            row = 1
+            
+            # Title
+            worksheet.cell(row=row, column=1, value="TYFCB Summary Report").font = Font(bold=True, size=16)
+            row += 2
+            
+            # Overall statistics
+            worksheet.cell(row=row, column=1, value="Chapter Overview").font = Font(bold=True, size=14)
+            row += 1
+            
+            worksheet.cell(row=row, column=1, value="Total TYFCB Amount:")
+            worksheet.cell(row=row, column=2, value=f"${tyfcb_summary.total_amount:,.2f}")
+            row += 1
+            
+            worksheet.cell(row=row, column=1, value="Total TYFCB Count:")
+            worksheet.cell(row=row, column=2, value=tyfcb_summary.total_count)
+            row += 2
+            
+            # Within vs Outside Chapter breakdown
+            worksheet.cell(row=row, column=1, value="Within Chapter Business").font = Font(bold=True, size=12)
+            row += 1
+            
+            worksheet.cell(row=row, column=1, value="Amount:")
+            worksheet.cell(row=row, column=2, value=f"${tyfcb_summary.total_amount_within_chapter:,.2f}")
+            row += 1
+            
+            worksheet.cell(row=row, column=1, value="Count:")
+            worksheet.cell(row=row, column=2, value=tyfcb_summary.total_count_within_chapter)
+            row += 1
+            
+            worksheet.cell(row=row, column=1, value="Percentage:")
+            worksheet.cell(row=row, column=2, value=f"{tyfcb_summary.within_chapter_percentage:.1f}%")
+            row += 2
+            
+            worksheet.cell(row=row, column=1, value="Outside Chapter Business").font = Font(bold=True, size=12)
+            row += 1
+            
+            worksheet.cell(row=row, column=1, value="Amount:")
+            worksheet.cell(row=row, column=2, value=f"${tyfcb_summary.total_amount_outside_chapter:,.2f}")
+            row += 1
+            
+            worksheet.cell(row=row, column=1, value="Count:")
+            worksheet.cell(row=row, column=2, value=tyfcb_summary.total_count_outside_chapter)
+            row += 1
+            
+            outside_percentage = 100 - tyfcb_summary.within_chapter_percentage
+            worksheet.cell(row=row, column=1, value="Percentage:")
+            worksheet.cell(row=row, column=2, value=f"{outside_percentage:.1f}%")
+            
+        except Exception as e:
+            raise ExportError(f"Error writing TYFCB summary: {str(e)}")
+    
+    def _write_tyfcb_member_breakdown(self, worksheet, tyfcb_summary: TYFCBSummary) -> None:
+        """Write TYFCB member breakdown to worksheet."""
+        try:
+            # Headers
+            headers = [
+                "Member Name", 
+                "Given Within Chapter", "Given Outside Chapter", "Total Given",
+                "Received Within Chapter", "Received Outside Chapter", "Total Received"
+            ]
+            
+            for col, header in enumerate(headers, start=1):
+                cell = worksheet.cell(row=1, column=col, value=header)
+                cell.font = Font(bold=True)
+            
+            # Data
+            row = 2
+            for member, stats in tyfcb_summary.member_statistics.items():
+                if stats.total_given > 0 or stats.total_received > 0:  # Only show members with TYFCB activity
+                    worksheet.cell(row=row, column=1, value=member.full_name)
+                    worksheet.cell(row=row, column=2, value=f"${stats.total_given_within_chapter:,.2f}")
+                    worksheet.cell(row=row, column=3, value=f"${stats.total_given_outside_chapter:,.2f}")
+                    worksheet.cell(row=row, column=4, value=f"${stats.total_given:,.2f}").font = Font(bold=True)
+                    worksheet.cell(row=row, column=5, value=f"${stats.total_received_within_chapter:,.2f}")
+                    worksheet.cell(row=row, column=6, value=f"${stats.total_received_outside_chapter:,.2f}")
+                    worksheet.cell(row=row, column=7, value=f"${stats.total_received:,.2f}").font = Font(bold=True)
+                    row += 1
+                    
+        except Exception as e:
+            raise ExportError(f"Error writing TYFCB member breakdown: {str(e)}")
+    
+    def _write_tyfcb_transactions(self, worksheet, tyfcbs: List[TYFCB]) -> None:
+        """Write detailed TYFCB transactions to worksheet."""
+        try:
+            # Headers
+            headers = ["From", "To", "Amount", "Within Chapter", "Description"]
+            
+            for col, header in enumerate(headers, start=1):
+                cell = worksheet.cell(row=1, column=col, value=header)
+                cell.font = Font(bold=True)
+            
+            # Data
+            row = 2
+            for tyfcb in sorted(tyfcbs, key=lambda x: x.amount, reverse=True):  # Sort by amount descending
+                giver_name = tyfcb.giver.full_name if tyfcb.giver else "Unknown"
+                worksheet.cell(row=row, column=1, value=giver_name)
+                worksheet.cell(row=row, column=2, value=tyfcb.receiver.full_name)
+                worksheet.cell(row=row, column=3, value=f"${tyfcb.amount:,.2f}")
+                worksheet.cell(row=row, column=4, value="Yes" if tyfcb.within_chapter else "No")
+                worksheet.cell(row=row, column=5, value=tyfcb.description or "")
+                row += 1
+                    
+        except Exception as e:
+            raise ExportError(f"Error writing TYFCB transactions: {str(e)}")

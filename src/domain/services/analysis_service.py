@@ -5,6 +5,7 @@ from typing import List, Tuple, Optional
 from src.domain.models.member import Member
 from src.domain.models.referral import Referral
 from src.domain.models.one_to_one import OneToOne
+from src.domain.models.tyfcb import TYFCB
 from src.domain.models.analysis_result import AnalysisReport, AnalysisMatrix, ComparisonResult
 from src.domain.exceptions.domain_exceptions import DataProcessingError
 from src.domain.services.matrix_service import MatrixService
@@ -44,7 +45,7 @@ class AnalysisService:
                 raise
             raise DataProcessingError(f"Error loading members data: {str(e)}")
     
-    def load_palms_data(self, members: List[Member]) -> Tuple[List[Referral], List[OneToOne]]:
+    def load_palms_data(self, members: List[Member]) -> Tuple[List[Referral], List[OneToOne], List[TYFCB]]:
         """
         Load all PALMS data from the configured directory.
         
@@ -52,12 +53,12 @@ class AnalysisService:
             members: List of valid members to match against
             
         Returns:
-            Tuple of (referrals, one_to_ones)
+            Tuple of (referrals, one_to_ones, tyfcbs)
         """
         try:
-            referrals, one_to_ones = self.palms_repository.load_all_palms_data(members)
+            referrals, one_to_ones, tyfcbs = self.palms_repository.load_all_palms_data(members)
             
-            return referrals, one_to_ones
+            return referrals, one_to_ones, tyfcbs
             
         except Exception as e:
             if isinstance(e, DataProcessingError):
@@ -66,7 +67,8 @@ class AnalysisService:
     
     def generate_complete_analysis(self, members: Optional[List[Member]] = None,
                                  referrals: Optional[List[Referral]] = None,
-                                 one_to_ones: Optional[List[OneToOne]] = None) -> AnalysisReport:
+                                 one_to_ones: Optional[List[OneToOne]] = None,
+                                 tyfcbs: Optional[List[TYFCB]] = None) -> AnalysisReport:
         """
         Generate a complete analysis report with all matrices.
         
@@ -74,6 +76,7 @@ class AnalysisService:
             members: Optional list of members (will load if not provided)
             referrals: Optional list of referrals (will load if not provided)
             one_to_ones: Optional list of one-to-ones (will load if not provided)
+            tyfcbs: Optional list of TYFCBs (will load if not provided)
             
         Returns:
             Complete AnalysisReport
@@ -83,12 +86,14 @@ class AnalysisService:
             if members is None:
                 members = self.load_members_data()
             
-            if referrals is None or one_to_ones is None:
-                loaded_referrals, loaded_one_to_ones = self.load_palms_data(members)
+            if referrals is None or one_to_ones is None or tyfcbs is None:
+                loaded_referrals, loaded_one_to_ones, loaded_tyfcbs = self.load_palms_data(members)
                 if referrals is None:
                     referrals = loaded_referrals
                 if one_to_ones is None:
                     one_to_ones = loaded_one_to_ones
+                if tyfcbs is None:
+                    tyfcbs = loaded_tyfcbs
             
             # Generate matrices
             referral_matrix = self.matrix_service.generate_referral_matrix(members, referrals)
@@ -108,11 +113,16 @@ class AnalysisService:
                 referral_matrix=referral_matrix,
                 one_to_one_matrix=one_to_one_matrix,
                 combination_matrix=combination_matrix,
+                tyfcbs=tyfcbs,
                 metadata={
                     'total_members': len(members),
                     'total_referrals': len(referrals),
                     'total_one_to_ones': len(one_to_ones),
-                    'palms_stats': self.palms_repository.get_palms_data_statistics(referrals, one_to_ones),
+                    'total_tyfcbs': len(tyfcbs),
+                    'total_tyfcb_amount': sum(tyfcb.amount for tyfcb in tyfcbs),
+                    'tyfcb_within_chapter': sum(tyfcb.amount for tyfcb in tyfcbs if tyfcb.within_chapter),
+                    'tyfcb_outside_chapter': sum(tyfcb.amount for tyfcb in tyfcbs if not tyfcb.within_chapter),
+                    'palms_stats': self.palms_repository.get_palms_data_statistics(referrals, one_to_ones, tyfcbs),
                     'member_stats': self.member_repository.get_member_statistics(members)
                 }
             )
@@ -268,7 +278,8 @@ class AnalysisService:
     
     def validate_data_quality(self, members: List[Member], 
                             referrals: List[Referral], 
-                            one_to_ones: List[OneToOne]) -> dict:
+                            one_to_ones: List[OneToOne],
+                            tyfcbs: List[TYFCB] = None) -> dict:
         """
         Validate the quality of loaded data.
         

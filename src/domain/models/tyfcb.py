@@ -7,25 +7,26 @@ from .member import Member
 
 @dataclass
 class TYFCB:
-    """Domain model representing a TYFCB (Thank You For Closed Business) between BNI members."""
+    """Domain model representing a TYFCB (Thank You For Closed Business) received by a BNI member."""
     
-    giver: Member
-    receiver: Member
+    receiver: Member  # The member who received the business
     amount: float
     within_chapter: bool = True
+    giver: Optional[Member] = None  # Optional - may not be specified for some TYFCB entries
     date: Optional[datetime] = None
     description: Optional[str] = None
     
     def __post_init__(self):
         """Validate TYFCB data after creation."""
-        if self.giver == self.receiver:
+        if self.giver and self.giver == self.receiver:
             raise ValueError("A member cannot give TYFCB to themselves")
         if self.amount < 0:
             raise ValueError("TYFCB amount cannot be negative")
     
     def __str__(self) -> str:
         chapter_type = "within chapter" if self.within_chapter else "outside chapter"
-        return f"TYFCB from {self.giver.full_name} to {self.receiver.full_name}: ${self.amount:.2f} ({chapter_type})"
+        giver_name = self.giver.full_name if self.giver else "Unknown"
+        return f"TYFCB from {giver_name} to {self.receiver.full_name}: ${self.amount:.2f} ({chapter_type})"
     
     def __eq__(self, other) -> bool:
         if not isinstance(other, TYFCB):

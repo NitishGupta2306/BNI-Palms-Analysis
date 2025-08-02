@@ -62,6 +62,7 @@ class ProcessPalmsDataResponse:
     members_count: int = 0
     referrals_count: int = 0
     one_to_ones_count: int = 0
+    tyfcbs_count: int = 0
     processed_files: List[Path] = field(default_factory=list)
     converted_files: List[Path] = field(default_factory=list)
     data_quality_report: Optional[Dict[str, Any]] = None
