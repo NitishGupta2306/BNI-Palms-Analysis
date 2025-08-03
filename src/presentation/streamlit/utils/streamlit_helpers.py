@@ -80,9 +80,7 @@ def display_report_generation_results(response: ReportGenerationResponse) -> Non
         # Display generated files
         if response.generated_files:
             st.write("**📊 Download Your Reports:**")
-            st.write(f"Debug: Found {len(response.generated_files)} generated files")
             for file_path in response.generated_files:
-                st.write(f"Debug: File - {file_path}")
                 create_download_button(file_path, f"📄 Download {file_path.name}")
         
         # Display execution time

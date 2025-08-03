@@ -188,32 +188,25 @@ class ExcelHandler:
         """Validate that a file is a proper Excel file."""
         try:
             if not file_path.exists():
-                print(f"Debug: File does not exist: {file_path}")
                 return False
             
             if file_path.suffix.lower() not in self.settings.excel.supported_extensions:
-                print(f"Debug: Unsupported extension {file_path.suffix}, supported: {self.settings.excel.supported_extensions}")
                 return False
             
             # For .xls files, we need to be more careful with validation
             if file_path.suffix.lower() == '.xls':
-                print(f"Debug: Validating .xls file: {file_path}")
-                
                 # Check if it's an XML-based .xls file
                 try:
                     with open(file_path, 'r', encoding='utf-8') as f:
                         first_line = f.readline().strip()
                         if first_line.startswith('<?xml'):
-                            print(f"Debug: Detected XML-based .xls file: {file_path}")
                             # This is an XML-based Excel file, not a binary .xls
                             # We'll need to convert it, but for validation, just check if it's parseable XML
                             try:
                                 import xml.etree.ElementTree as ET
                                 ET.parse(file_path)
-                                print(f"Debug: XML-based .xls file is valid XML: {file_path}")
                                 return True
-                            except Exception as xml_e:
-                                print(f"Debug: XML parsing failed for {file_path}: {xml_e}")
+                            except Exception:
                                 return False
                 except:
                     # If we can't read as text, it might be binary
@@ -222,29 +215,19 @@ class ExcelHandler:
                 # Try binary .xls format
                 try:
                     # Try reading with xlrd engine specifically for .xls files
-                    print(f"Debug: Trying xlrd engine for {file_path}")
                     pd.read_excel(file_path, nrows=1, engine='xlrd')
-                    print(f"Debug: xlrd engine succeeded for {file_path}")
                     return True
-                except Exception as e:
-                    print(f"Debug: xlrd engine failed for {file_path}: {e}")
+                except Exception:
                     # If xlrd fails, try openpyxl (for XML-based .xls files)
                     try:
-                        print(f"Debug: Trying openpyxl engine for {file_path}")
                         pd.read_excel(file_path, nrows=1, engine='openpyxl')
-                        print(f"Debug: openpyxl engine succeeded for {file_path}")
                         return True
-                    except Exception as e2:
-                        print(f"Debug: openpyxl engine also failed for {file_path}: {e2}")
-                        print(f"Debug: All pandas engines failed, but file might still be processable")
+                    except Exception:
                         return True  # Allow XML-based files to pass validation
             else:
                 # For .xlsx files, use default pandas behavior
-                print(f"Debug: Validating .xlsx file: {file_path}")
                 pd.read_excel(file_path, nrows=1)
-                print(f"Debug: .xlsx validation succeeded for {file_path}")
                 return True
             
-        except Exception as e:
-            print(f"Debug: General validation error for {file_path}: {e}")
+        except Exception:
             return False

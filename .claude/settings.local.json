@@ -8,7 +8,8 @@
       "Bash(head:*)",
       "Bash(find:*)",
       "Bash(ls:*)",
-      "Bash(streamlit run:*)"
+      "Bash(streamlit run:*)",
+      "Bash(pkill:*)"
     ],
     "deny": []
   }

@@ -54,6 +54,7 @@ class FileNames:
     COMBINATION_MATRIX = "combination_matrix.xlsx"
     COMBINATION_COMPARISON = "combination_matrix_comparison.xlsx"
     TYFCB_DATA = "tyfcb_data.xlsx"
+    COMPREHENSIVE_MEMBER_REPORT = "comprehensive_member_report.xlsx"
 
 
 class StreamlitConfig:

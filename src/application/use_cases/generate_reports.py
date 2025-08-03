@@ -68,18 +68,19 @@ class GenerateReportsUseCase:
                     response.add_error(f"Failed to generate combination matrix: {str(e)}")
             
             # Always generate TYFCB data if TYFCB entries exist
-            print(f"Debug: Found {len(report.tyfcbs)} TYFCB entries in report")
             if report.tyfcbs:
                 try:
-                    print(f"Debug: Generating TYFCB data file...")
                     file_path = self._export_tyfcb_data(report, output_dir)
                     response.add_generated_file(file_path)
-                    print(f"Debug: TYFCB data file generated successfully: {file_path}")
                 except Exception as e:
-                    print(f"Debug: TYFCB export failed: {str(e)}")
                     response.add_error(f"Failed to generate TYFCB data: {str(e)}")
-            else:
-                print("Debug: No TYFCB entries found, skipping TYFCB data generation")
+            
+            if request.include_comprehensive_member_report:
+                try:
+                    file_path = self._export_comprehensive_member_report(report, output_dir)
+                    response.add_generated_file(file_path)
+                except Exception as e:
+                    response.add_error(f"Failed to generate comprehensive member report: {str(e)}")
             
             # Add metadata
             response.metadata = {
@@ -152,6 +153,19 @@ class GenerateReportsUseCase:
             
         except Exception as e:
             raise ExportError(f"Failed to export TYFCB data: {str(e)}")
+    
+    def _export_comprehensive_member_report(self, report, output_dir: Path) -> Path:
+        """Export the comprehensive member report to Excel."""
+        try:
+            file_path = output_dir / FileNames.COMPREHENSIVE_MEMBER_REPORT
+            self.export_service.export_comprehensive_member_report(
+                report,
+                file_path
+            )
+            return file_path
+            
+        except Exception as e:
+            raise ExportError(f"Failed to export comprehensive member report: {str(e)}")
     
     def generate_quick_report(self) -> ReportGenerationResponse:
         """
