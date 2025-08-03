@@ -15,6 +15,7 @@ class ReportGenerationRequest:
     include_referral_matrix: bool = True
     include_oto_matrix: bool = True
     include_combination_matrix: bool = True
+    include_comprehensive_member_report: bool = False
     
     def validate(self) -> bool:
         """Validate the request."""

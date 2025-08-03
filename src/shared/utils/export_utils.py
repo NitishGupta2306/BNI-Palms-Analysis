@@ -511,3 +511,121 @@ class ExportService:
                     
         except Exception as e:
             raise ExportError(f"Error writing TYFCB transactions: {str(e)}")
+    
+    def export_comprehensive_member_report(self, report, file_path: Path) -> None:
+        """
+        Export comprehensive member report with all key metrics for chapter data only.
+        
+        Args:
+            report: Analysis report containing all data
+            file_path: Output file path
+        """
+        try:
+            workbook = self.excel_handler.create_styled_workbook()
+            worksheet = workbook.active
+            worksheet.title = "Comprehensive Member Report"
+            
+            # Write the comprehensive member data
+            self._write_comprehensive_member_data(worksheet, report)
+            
+            # Apply styling
+            for row in worksheet.iter_rows():
+                for cell in row:
+                    if cell.value is not None:
+                        cell.border = Border(left=Side(style="thin"), right=Side(style="thin"),
+                                           top=Side(style="thin"), bottom=Side(style="thin"))
+            
+            # Auto-adjust column widths
+            self.excel_handler.auto_adjust_column_widths(worksheet)
+            
+            # Save workbook
+            self.excel_handler.save_workbook(workbook, file_path)
+            
+        except Exception as e:
+            raise ExportError(f"Failed to export comprehensive member report: {str(e)}")
+    
+    def _write_comprehensive_member_data(self, worksheet, report) -> None:
+        """Write comprehensive member data to worksheet."""
+        try:
+            # Headers
+            headers = [
+                "Member Name",
+                "Referrals Received", 
+                "Referrals Given",
+                "One to Ones Done",
+                "Number of TYFCBs (Within Chapter)",
+                "Total Value of TYFCBs (Within Chapter)"
+            ]
+            
+            for col, header in enumerate(headers, start=1):
+                cell = worksheet.cell(row=1, column=col, value=header)
+                cell.font = Font(bold=True)
+                cell.fill = PatternFill(start_color="CCCCCC", end_color="CCCCCC", fill_type="solid")
+            
+            # Initialize TYFCB service for calculations
+            from src.domain.services.tyfcb_service import TYFCBService
+            tyfcb_service = TYFCBService()
+            
+            # Filter TYFCBs to only within chapter
+            within_chapter_tyfcbs = [tyfcb for tyfcb in report.tyfcbs if tyfcb.within_chapter]
+            
+            # Generate TYFCB summary for within-chapter data only
+            tyfcb_summary = tyfcb_service.generate_tyfcb_summary(report.all_members, within_chapter_tyfcbs)
+            
+            # Data rows
+            row = 2
+            for member in sorted(report.all_members, key=lambda m: m.full_name):
+                # Get referral statistics
+                ref_stats = report.referral_matrix.member_statistics.get(member)
+                referrals_received = ref_stats.total_referrals_received if ref_stats else 0
+                referrals_given = ref_stats.total_referrals_given if ref_stats else 0
+                
+                # Get one-to-one statistics
+                oto_stats = report.one_to_one_matrix.member_statistics.get(member)
+                one_to_ones_done = oto_stats.total_one_to_ones if oto_stats else 0
+                
+                # Get TYFCB statistics (within chapter only)
+                tyfcb_member_stats = tyfcb_summary.member_statistics.get(member)
+                if tyfcb_member_stats:
+                    num_tyfcbs = tyfcb_member_stats.count_received_within_chapter
+                    total_tyfcb_value = tyfcb_member_stats.total_received_within_chapter
+                else:
+                    num_tyfcbs = 0
+                    total_tyfcb_value = 0.0
+                
+                # Write data
+                worksheet.cell(row=row, column=1, value=member.full_name)
+                worksheet.cell(row=row, column=2, value=referrals_received)
+                worksheet.cell(row=row, column=3, value=referrals_given)
+                worksheet.cell(row=row, column=4, value=one_to_ones_done)
+                worksheet.cell(row=row, column=5, value=num_tyfcbs)
+                worksheet.cell(row=row, column=6, value=f"${total_tyfcb_value:,.2f}")
+                
+                row += 1
+            
+            # Add summary row
+            row += 1
+            worksheet.cell(row=row, column=1, value="TOTALS").font = Font(bold=True)
+            
+            # Calculate totals
+            total_referrals_received = sum(
+                report.referral_matrix.member_statistics.get(member, type('obj', (object,), {'total_referrals_received': 0})).total_referrals_received 
+                for member in report.all_members
+            )
+            total_referrals_given = sum(
+                report.referral_matrix.member_statistics.get(member, type('obj', (object,), {'total_referrals_given': 0})).total_referrals_given 
+                for member in report.all_members
+            )
+            total_one_to_ones = sum(
+                report.one_to_one_matrix.member_statistics.get(member, type('obj', (object,), {'total_one_to_ones': 0})).total_one_to_ones 
+                for member in report.all_members
+            ) // 2  # Divide by 2 since each one-to-one is counted twice
+            
+            worksheet.cell(row=row, column=2, value=total_referrals_received).font = Font(bold=True)
+            worksheet.cell(row=row, column=3, value=total_referrals_given).font = Font(bold=True)
+            worksheet.cell(row=row, column=4, value=total_one_to_ones).font = Font(bold=True)
+            worksheet.cell(row=row, column=5, value=tyfcb_summary.total_count_within_chapter).font = Font(bold=True)
+            worksheet.cell(row=row, column=6, value=f"${tyfcb_summary.total_amount_within_chapter:,.2f}").font = Font(bold=True)
+            
+        except Exception as e:
+            raise ExportError(f"Error writing comprehensive member data: {str(e)}")

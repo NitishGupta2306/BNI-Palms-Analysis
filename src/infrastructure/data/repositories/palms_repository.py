@@ -102,15 +102,9 @@ class PalmsRepository:
                         one_to_ones.append(one_to_one)
                         
                     elif normalized_slip_type == SlipType.TYFCB.value:
-                        # Debug: Log TYFCB detection
-                        giver_name_debug = giver.full_name if giver else "None"
-                        print(f"Debug: Found TYFCB entry on row {row_idx}: from {giver_name_debug} -> to {receiver.full_name}, original slip_type: {repr(slip_type)}")
-                        
                         # Extract TYFCB amount and detail
                         tyfcb_amount = row[ExcelColumns.TYFCB_AMOUNT.value] if len(row) > ExcelColumns.TYFCB_AMOUNT.value else None
                         detail = row[ExcelColumns.DETAIL.value] if len(row) > ExcelColumns.DETAIL.value else None
-                        
-                        print(f"Debug: TYFCB amount raw: {repr(tyfcb_amount)}, detail raw: {repr(detail)}")
                         
                         # Parse amount - handle currency formatting
                         try:
@@ -122,12 +116,9 @@ class PalmsRepository:
                                 amount = 0.0
                         except (ValueError, TypeError):
                             amount = 0.0
-                            print(f"Debug: Failed to parse TYFCB amount '{tyfcb_amount}', defaulting to 0.0")
                         
                         # Determine if within chapter (empty detail field means within chapter)
                         within_chapter = detail is None or str(detail).strip() == ""
-                        
-                        print(f"Debug: Parsed amount: {amount}, within_chapter: {within_chapter}")
                         
                         # Create TYFCB entry (focused on receiver, giver is optional)
                         if amount > 0:  # Only add TYFCB entries with valid amounts
@@ -139,26 +130,12 @@ class PalmsRepository:
                                 description=str(detail) if detail else None
                             )
                             tyfcbs.append(tyfcb)
-                            print(f"Debug: Added TYFCB entry: {tyfcb}")
-                        else:
-                            print(f"Debug: Skipped TYFCB entry due to zero/invalid amount: {amount}")
                     
-                    else:
-                        # Debug: Log unrecognized slip types
-                        if slip_type and str(slip_type).strip():
-                            print(f"Debug: Unhandled slip type on row {row_idx}: {repr(slip_type)} (normalized: {repr(normalized_slip_type)})")
+                    # Unrecognized slip types are silently ignored
                 
                 except Exception as e:
-                    # Log the error but continue processing other rows
-                    print(f"Warning: Error processing row {row_idx} in {file_path}: {e}")
+                    # Continue processing other rows if there's an error
                     continue
-            
-            # Debug: Summary of what was extracted
-            print(f"Debug: Extraction summary for {file_path}:")
-            print(f"  - Referrals: {len(referrals)}")
-            print(f"  - One-to-Ones: {len(one_to_ones)}")
-            print(f"  - TYFCBs: {len(tyfcbs)}")
-            print(f"  - Total rows processed: {row_idx}")
             
             return referrals, one_to_ones, tyfcbs
             
@@ -192,8 +169,8 @@ class PalmsRepository:
                     all_one_to_ones.extend(one_to_ones)
                     all_tyfcbs.extend(tyfcbs)
                     
-                except DataProcessingError as e:
-                    print(f"Warning: Error processing PALMS file {file_path}: {e}")
+                except DataProcessingError:
+                    # Skip files that can't be processed
                     continue
             
             return all_referrals, all_one_to_ones, all_tyfcbs
@@ -249,8 +226,7 @@ class PalmsRepository:
         if normalized_upper in ['REFERRAL', 'REF', 'REFERRALS']:
             return SlipType.REFERRAL.value
         
-        # Log unrecognized slip types for debugging
-        print(f"Warning: Unrecognized slip type: {repr(slip_type)} (normalized: {repr(normalized)})")
+        # Return None for unrecognized slip types
         return None
     
     def _find_member_by_name(self, name: str, member_lookup: dict) -> Optional[Member]:
@@ -370,7 +346,6 @@ class PalmsRepository:
         try:
             # First check if it's a valid Excel file
             if not self.excel_handler.validate_excel_file(file_path):
-                print(f"Debug: Excel validation failed for {file_path}")
                 return False
             
             # Convert to xlsx if needed for better compatibility
@@ -381,28 +356,18 @@ class PalmsRepository:
                 df = self.excel_handler.read_excel_to_dataframe(xlsx_path, nrows=10)
                 
                 # Basic validation: check if we have data and at least 2 columns
-                if df.empty:
-                    print(f"Debug: File {file_path} is empty")
+                if df.empty or df.shape[1] < 2:
                     return False
                 
-                if df.shape[1] < 2:
-                    print(f"Debug: File {file_path} has less than 2 columns")
-                    return False
-                
-                # More flexible validation - just check if file can be read
                 # PALMS files should have some data in the first few rows
                 non_empty_rows = df.dropna(how='all')
                 if len(non_empty_rows) == 0:
-                    print(f"Debug: File {file_path} has no data rows")
                     return False
                 
-                print(f"Debug: File {file_path} passed validation")
                 return True
                 
-            except Exception as e:
-                print(f"Debug: Error during conversion/validation for {file_path}: {e}")
+            except Exception:
                 return False
             
-        except Exception as e:
-            print(f"Debug: General validation error for {file_path}: {e}")
+        except Exception:
             return False

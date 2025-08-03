@@ -91,6 +91,8 @@ def render_reports_page():
                 include_referral = st.checkbox("Generate Referral Matrix", value=True)
                 include_oto = st.checkbox("Generate One-to-One Matrix", value=True)
                 include_combination = st.checkbox("Generate Combination Matrix", value=True)
+                include_comprehensive = st.checkbox("Generate Comprehensive Member Report", value=False, 
+                                                  help="Generates a comprehensive report with all metrics per member (within chapter data only)")
             
             with col2:
                 st.subheader("Advanced Options")
@@ -106,6 +108,7 @@ def render_reports_page():
                     include_referral,
                     include_oto,
                     include_combination,
+                    include_comprehensive,
                     validate_data_quality,
                     show_processing_details
                 )
@@ -153,6 +156,7 @@ def _generate_reports(generate_reports_use_case: GenerateReportsUseCase,
                      include_referral: bool,
                      include_oto: bool,  
                      include_combination: bool,
+                     include_comprehensive: bool,
                      validate_data_quality: bool,
                      show_processing_details: bool):
     """Generate reports with progress tracking."""
@@ -220,7 +224,8 @@ def _generate_reports(generate_reports_use_case: GenerateReportsUseCase,
             output_directory=path_manager.reports_dir,
             include_referral_matrix=include_referral,
             include_oto_matrix=include_oto,
-            include_combination_matrix=include_combination
+            include_combination_matrix=include_combination,
+            include_comprehensive_member_report=include_comprehensive
         )
         
         # Generate reports
