@@ -111,11 +111,18 @@ class ComparisonService:
                 referral_only_value = df_copy.iloc[row_idx, referral_only_col]
                 oto_and_referral_value = df_copy.iloc[row_idx, oto_and_referral_col]
                 
-                # Handle NaN values
-                referral_only_value = 0 if pd.isna(referral_only_value) else referral_only_value
-                oto_and_referral_value = 0 if pd.isna(oto_and_referral_value) else oto_and_referral_value
+                # Convert to numeric, handling NaN and string values
+                try:
+                    referral_only_value = 0 if pd.isna(referral_only_value) else float(referral_only_value)
+                except (ValueError, TypeError):
+                    referral_only_value = 0
                 
-                # Calculate sum
+                try:
+                    oto_and_referral_value = 0 if pd.isna(oto_and_referral_value) else float(oto_and_referral_value)
+                except (ValueError, TypeError):
+                    oto_and_referral_value = 0
+                
+                # Calculate sum (now guaranteed to be numeric)
                 current_referral = referral_only_value + oto_and_referral_value
                 df_copy.iloc[row_idx, new_col_position] = current_referral
             
@@ -179,7 +186,7 @@ class ComparisonService:
             for row_idx in range(new_oto_referral_row + 1, len(result_df)):
                 member_name = result_df.iloc[row_idx, 0]
                 if pd.notna(member_name):
-                    normalized_name = str(member_name).strip().lower()
+                    normalized_name = self._normalize_member_name(member_name)
                     
                     # Get current values
                     current_referral = result_df.iloc[row_idx, current_referral_col]
@@ -226,6 +233,31 @@ class ComparisonService:
         except Exception as e:
             raise DataProcessingError(f"Error adding comparison columns: {str(e)}")
     
+    def _normalize_member_name(self, name: str) -> str:
+        """
+        Normalize member names for consistent matching across different formats.
+        Handles variations like:
+        - "Hashim Abdul Samad" -> "hashimabdulsamad"
+        - "Gary Peter D'souza" -> "garypeterdsouza"
+        
+        Args:
+            name: Member name to normalize
+            
+        Returns:
+            Normalized name for matching
+        """
+        if pd.isna(name):
+            return ""
+        
+        # Convert to string and lowercase
+        normalized = str(name).lower()
+        
+        # Remove all spaces and special characters except letters and numbers
+        import re
+        normalized = re.sub(r'[^a-z0-9]', '', normalized)
+        
+        return normalized
+    
     def _create_member_value_lookup(self, df: pd.DataFrame, start_row: int, 
                                   value_col: int) -> Dict[str, Any]:
         """
@@ -254,7 +286,7 @@ class ComparisonService:
                             value = float(value)
                         except (ValueError, TypeError):
                             value = 0
-                    normalized_name = str(member_name).strip().lower()
+                    normalized_name = self._normalize_member_name(member_name)
                     lookup[normalized_name] = value
             
             return lookup
